@@ -61,7 +61,7 @@ header("Content-Type: text/html; charset=UTF-8");
 </head>
 <body>
     <header>
-        <h1>Zynemax+ | Entradas de Cine</h1>
+        <h1>Zynemax+ | Prueba 1 </h1>
     </header>
     <nav>
         <a href="#cartelera">Cartelera</a>
