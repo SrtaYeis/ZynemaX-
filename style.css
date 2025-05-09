@@ -98,6 +98,41 @@ button:hover {
 .welcome-message h2 {
     color: #ffd700;
 }
+.movie-list, .cinema-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+.movie, .cinema {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #ffd700;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.movie:hover, .cinema:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+.movie h3, .cinema h3 {
+    color: #ffd700;
+    margin-top: 0;
+    font-size: 1.4rem;
+}
+.movie p, .cinema p {
+    margin: 0.5rem 0;
+    font-size: 1rem;
+    color: #ddd;
+}
+.movie button, .cinema button {
+    width: 100%;
+    padding: 0.6rem;
+    font-size: 1rem;
+}
+.movie p em, .cinema p em {
+    color: #b22222;
+    font-style: italic;
+}
 footer {
     background-color: #1a1a1a;
     padding: 1rem;
