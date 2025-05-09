@@ -47,13 +47,13 @@ if (isset($_POST['register'])) {
     }
 }
 
-// Procesar login (solo admin)
+// Procesar login (para cualquier tipo_usuario)
 if (isset($_POST['login'])) {
     $dni = isset($_POST['dni']) ? (int)$_POST['dni'] : null;
     $contrasena = isset($_POST['contrasena']) ? $_POST['contrasena'] : null;
 
     if ($dni && $contrasena) {
-        $sql = "SELECT dni, nombre, contrasena, tipo_usuario FROM Usuario WHERE dni = ? AND tipo_usuario = 'admin'";
+        $sql = "SELECT dni, nombre, contrasena, tipo_usuario FROM Usuario WHERE dni = ?";
         $params = [$dni];
         $stmt = sqlsrv_query($conn, $sql, $params);
 
@@ -61,7 +61,7 @@ if (isset($_POST['login'])) {
             $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
             if (password_verify($contrasena, $row['contrasena'])) {
                 $_SESSION['dni'] = $row['dni'];
-                $_SESSION['nombre'] = $row['nombre']; // Guardar el nombre en la sesión
+                $_SESSION['nombre'] = $row['nombre'];
                 $_SESSION['tipo_usuario'] = $row['tipo_usuario'];
                 header("Location: index.php");
                 exit();
@@ -69,25 +69,12 @@ if (isset($_POST['login'])) {
                 echo "<script>alert('Contraseña incorrecta.');</script>";
             }
         } else {
-            echo "<script>alert('Usuario no encontrado o no es administrador.');</script>";
+            echo "<script>alert('Usuario no encontrado.');</script>";
         }
         sqlsrv_free_stmt($stmt);
     } else {
         echo "<script>alert('Faltan datos para iniciar sesión.');</script>";
     }
-}
-
-// Obtener usuarios registrados para mostrarlos
-$users = [];
-$sql = "SELECT dni, nombre, email, tipo_usuario FROM Usuario";
-$stmt = sqlsrv_query($conn, $sql);
-if ($stmt) {
-    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-        $users[] = $row;
-    }
-    sqlsrv_free_stmt($stmt);
-} else {
-    echo "<!-- Error al obtener usuarios: " . print_r(sqlsrv_errors(), true) . " -->";
 }
 
 sqlsrv_close($conn);
@@ -109,8 +96,8 @@ sqlsrv_close($conn);
         <a href="#cartelera">Cartelera</a>
         <a href="#sedes">Sedes</a>
         <?php if (!isset($_SESSION['dni'])): ?>
-            <a href="#" onclick="showForm('login')">Login (Admin)</a>
-            <a href="#" onclick="showForm('register')">Register (Cliente)</a>
+            <a href="#" onclick="showForm('login')">Login</a>
+            <a href="#" onclick="showForm('register')">Register</a>
         <?php else: ?>
             <a href="/logout.php">Logout (<?php echo $_SESSION['nombre']; ?>)</a>
         <?php endif; ?>
@@ -120,7 +107,7 @@ sqlsrv_close($conn);
         <?php if (!isset($_SESSION['dni'])): ?>
             <div class="auth-section">
                 <div id="login-form" class="form-container" style="display: none;">
-                    <h2>Iniciar Sesión (Admin)</h2>
+                    <h2>Iniciar Sesión</h2>
                     <form method="POST">
                         <input type="number" name="dni" placeholder="DNI" required>
                         <input type="password" name="contrasena" placeholder="Contraseña" required>
@@ -128,7 +115,7 @@ sqlsrv_close($conn);
                     </form>
                 </div>
                 <div id="register-form" class="form-container" style="display: none;">
-                    <h2>Registrarse (Cliente)</h2>
+                    <h2>Registrarse</h2>
                     <form method="POST">
                         <input type="number" name="dni" placeholder="DNI" required>
                         <input type="text" name="nombre" placeholder="Nombre" required maxlength="50">
@@ -156,7 +143,6 @@ sqlsrv_close($conn);
             <h2>Sedes</h2>
             <p>Próximamente: Selecciona tu cine favorito.</p>
         </div>
-        
     </div>
     <footer>
         <p>© 2025 Zynemax+ | Todos los derechos reservados</p>
