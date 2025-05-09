@@ -156,20 +156,7 @@ sqlsrv_close($conn);
             <h2>Sedes</h2>
             <p>Próximamente: Selecciona tu cine favorito.</p>
         </div>
-
-        <!-- Sección Usuarios Registrados -->
-        <div class="section" id="users">
-            <h2>Usuarios Registrados</h2>
-            <?php if (!empty($users)): ?>
-                <ul>
-                    <?php foreach ($users as $user): ?>
-                        <li>DNI: <?php echo $user['dni']; ?> - Nombre: <?php echo $user['nombre']; ?> - Email: <?php echo $user['email']; ?> (<?php echo $user['tipo_usuario']; ?>)</li>
-                    <?php endforeach; ?>
-                </ul>
-            <?php else: ?>
-                <p>No hay usuarios registrados aún.</p>
-            <?php endif; ?>
-        </div>
+        
     </div>
     <footer>
         <p>© 2025 Zynemax+ | Todos los derechos reservados</p>
