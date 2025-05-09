@@ -1,4 +1,5 @@
 <?php
+ob_start(); // Iniciar el búfer de salida
 header("Content-Type: text/html; charset=UTF-8");
 session_start();
 
@@ -16,8 +17,6 @@ $conn = sqlsrv_connect($serverName, $connectionInfo);
 
 if ($conn === false) {
     die("<pre>Conexión fallida: " . print_r(sqlsrv_errors(), true) . "</pre>");
-} else {
-    echo "<!-- Conexión a la base de datos exitosa -->";
 }
 
 // Procesar registro (solo cliente)
@@ -34,11 +33,10 @@ if (isset($_POST['register'])) {
         $stmt = sqlsrv_query($conn, $sql, $params);
 
         if ($stmt === false) {
-            // Redirigir con un parámetro de error para mostrarlo en la página
             header("Location: index.php?error=1");
             exit();
         } else {
-            header("Location: index.php");
+            header("Location: index.php?register_success=1");
             exit();
         }
         sqlsrv_free_stmt($stmt);
@@ -64,7 +62,7 @@ if (isset($_POST['login'])) {
                 $_SESSION['dni'] = $row['dni'];
                 $_SESSION['nombre'] = $row['nombre'];
                 $_SESSION['tipo_usuario'] = $row['tipo_usuario'];
-                header("Location: index.php");
+                header("Location: index.php?login_success=1");
                 exit();
             } else {
                 header("Location: index.php?error=3");
@@ -112,11 +110,14 @@ sqlsrv_close($conn);
             <div class="auth-section">
                 <?php
                 $error = isset($_GET['error']) ? $_GET['error'] : 0;
+                $register_success = isset($_GET['register_success']) ? true : false;
+                $login_success = isset($_GET['login_success']) ? true : false;
                 if ($error == 1) echo "<p style='color:red;'>Error al registrarse. Verifica los datos.</p>";
                 if ($error == 2) echo "<p style='color:red;'>Faltan datos en el formulario.</p>";
                 if ($error == 3) echo "<p style='color:red;'>Contraseña incorrecta.</p>";
                 if ($error == 4) echo "<p style='color:red;'>Usuario no encontrado.</p>";
                 if ($error == 5) echo "<p style='color:red;'>Faltan datos para iniciar sesión.</p>";
+                if ($register_success) echo "<p style='color:green;'>Registro exitoso. Por favor inicia sesión.</p>";
                 ?>
                 <div id="login-form" class="form-container" style="display: none;">
                     <h2>Iniciar Sesión</h2>
@@ -139,8 +140,13 @@ sqlsrv_close($conn);
             </div>
         <?php else: ?>
             <div class="welcome-message">
-                <h2>Bienvenido, <?php echo $_SESSION['nombre']; ?> (<?php echo $_SESSION['tipo_usuario']; ?>)</h2>
-                <p>Explora la cartelera y reserva tus entradas.</p>
+                <?php if (isset($_GET['login_success'])): ?>
+                    <h2>Bienvenido, <?php echo $_SESSION['nombre']; ?> (<?php echo $_SESSION['tipo_usuario']; ?>)</h2>
+                    <p>Explora la cartelera y reserva tus entradas.</p>
+                <?php else: ?>
+                    <h2>Bienvenido, <?php echo $_SESSION['nombre']; ?> (<?php echo $_SESSION['tipo_usuario']; ?>)</h2>
+                    <p>Explora la cartelera y reserva tus entradas.</p>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
 
@@ -162,3 +168,6 @@ sqlsrv_close($conn);
     <script src="/scrip.js" defer></script>
 </body>
 </html>
+<?php
+ob_end_flush(); // Finalizar el búfer de salida
+?>
