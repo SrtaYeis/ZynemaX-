@@ -2,15 +2,17 @@
 header("Content-Type: text/html; charset=UTF-8");
 session_start();
 
-// Conexión a la base de datos usando la cadena de conexión de Azure
-$connectionString = getenv("ZynemaxDBConnection");
+// Conexión a la base de datos con los valores proporcionados
+$serverName = "database-zynemaxplus-server.database.windows.net";
 $connectionInfo = [
-    "ConnectionString" => $connectionString,
+    "Database" => "database-zynemaxplus-server",
+    "UID" => "zynemaxplus",
+    "PWD" => "grupo2_1al10",
     "Encrypt" => true,
     "TrustServerCertificate" => false
 ];
 
-$conn = sqlsrv_connect("zynemaxsqlserver.database.windows.net", $connectionInfo);
+$conn = sqlsrv_connect($serverName, $connectionInfo);
 
 if ($conn === false) {
     die(print_r(sqlsrv_errors(), true));
