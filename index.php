@@ -136,6 +136,6 @@ sqlsrv_close($conn);
     <footer>
         <p>© 2025 Zynemax+ | Todos los derechos reservados</p>
     </footer>
-    <script src="script.js"></script>
+    <script src="scrip.js"></script>
 </body>
 </html>
