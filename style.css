@@ -1,48 +1,108 @@
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Arial', sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f4f4f4;
+    background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), url('https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+    background-size: cover;
+    background-attachment: fixed;
+    color: #fff;
 }
 header {
     background-color: #1a1a1a;
-    color: white;
     padding: 1rem;
     text-align: center;
+    border-bottom: 3px solid #b22222;
+}
+header h1 {
+    margin: 0;
+    font-size: 2.5rem;
+    color: #ffd700;
 }
 nav {
     background-color: #333;
     padding: 1rem;
+    text-align: center;
 }
 nav a {
-    color: white;
+    color: #ffd700;
     text-decoration: none;
-    margin: 0 1rem;
+    margin: 0 1.5rem;
     font-weight: bold;
+    font-size: 1.1rem;
 }
 nav a:hover {
-    color: #ffd700;
+    color: #b22222;
 }
 .container {
     max-width: 1200px;
     margin: 2rem auto;
     padding: 0 1rem;
 }
-h2 {
-    color: #333;
-}
 .section {
-    background-color: white;
-    padding: 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: 10px;
+    backdrop-filter: blur(5px);
+    border: 1px solid #b22222;
+}
+.section h2 {
+    color: #ffd700;
+    border-bottom: 2px solid #b22222;
+    padding-bottom: 0.5rem;
+}
+.auth-section {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+.form-container {
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+    padding: 2rem;
+    border-radius: 10px;
+    max-width: 400px;
+    margin: 0 auto;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+.form-container h2 {
+    color: #b22222;
     margin-bottom: 1rem;
+}
+input, select, textarea {
+    width: 100%;
+    padding: 0.5rem;
+    margin: 0.5rem 0;
+    border: 1px solid #b22222;
     border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-sizing: border-box;
+}
+button {
+    background-color: #b22222;
+    color: #fff;
+    padding: 0.7rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 0.5rem;
+}
+button:hover {
+    background-color: #8b0000;
+}
+.welcome-message {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+}
+.welcome-message h2 {
+    color: #ffd700;
 }
 footer {
     background-color: #1a1a1a;
-    color: white;
-    text-align: center;
     padding: 1rem;
+    text-align: center;
+    border-top: 3px solid #b22222;
     position: fixed;
     bottom: 0;
     width: 100%;
