@@ -2,7 +2,7 @@
 header("Content-Type: text/html; charset=UTF-8");
 session_start();
 
-// Conexión a la base de datos con los valores proporcionados
+// Conexión a la base de datos
 $serverName = "database-zynemaxplus-server.database.windows.net";
 $connectionInfo = [
     "Database" => "database-zynemaxplus-server",
@@ -15,51 +15,79 @@ $connectionInfo = [
 $conn = sqlsrv_connect($serverName, $connectionInfo);
 
 if ($conn === false) {
-    die(print_r(sqlsrv_errors(), true));
+    die("<pre>Conexión fallida: " . print_r(sqlsrv_errors(), true) . "</pre>");
+} else {
+    echo "<!-- Conexión a la base de datos exitosa -->";
 }
 
-// Procesar registro
+// Procesar registro (solo cliente)
 if (isset($_POST['register'])) {
-    $dni = $_POST['dni'];
-    $nombre = $_POST['nombre'];
-    $email = $_POST['email'];
-    $contrasena = password_hash($_POST['contrasena'], PASSWORD_DEFAULT); // Encriptar contraseña
-    $tipo_usuario = $_POST['tipo_usuario'];
+    echo "<!-- Datos recibidos del formulario: " . print_r($_POST, true) . " -->";
 
-    $sql = "INSERT INTO Usuario (dni, nombre, email, contrasena, tipo_usuario) VALUES (?, ?, ?, ?, ?)";
-    $params = [$dni, $nombre, $email, $contrasena, $tipo_usuario];
-    $stmt = sqlsrv_query($conn, $sql, $params);
+    $dni = isset($_POST['dni']) ? (int)$_POST['dni'] : null;
+    $nombre = isset($_POST['nombre']) ? substr($_POST['nombre'], 0, 50) : null;
+    $email = isset($_POST['email']) ? substr($_POST['email'], 0, 50) : null;
+    $contrasena = isset($_POST['contrasena']) ? password_hash($_POST['contrasena'], PASSWORD_DEFAULT) : null;
+    $tipo_usuario = 'cliente'; // Fijo como cliente
 
-    if ($stmt === false) {
-        echo "<script>alert('Error al registrarse: " . print_r(sqlsrv_errors(), true) . "');</script>";
+    if ($dni && $nombre && $email && $contrasena) {
+        $sql = "INSERT INTO Usuario (dni, nombre, email, contrasena, tipo_usuario) VALUES (?, ?, ?, ?, ?)";
+        $params = [$dni, $nombre, $email, $contrasena, $tipo_usuario];
+        $stmt = sqlsrv_query($conn, $sql, $params);
+
+        if ($stmt === false) {
+            echo "<script>alert('Error al registrarse: " . print_r(sqlsrv_errors(), true) . "');</script>";
+        } else {
+            header("Location: index.php");
+            exit();
+        }
+        sqlsrv_free_stmt($stmt);
     } else {
-        echo "<script>alert('Registro exitoso. Por favor inicia sesión.');</script>";
+        echo "<script>alert('Faltan datos en el formulario.');</script>";
     }
-    sqlsrv_free_stmt($stmt);
 }
 
-// Procesar login
+// Procesar login (solo admin)
 if (isset($_POST['login'])) {
-    $dni = $_POST['dni'];
-    $contrasena = $_POST['contrasena'];
+    $dni = isset($_POST['dni']) ? (int)$_POST['dni'] : null;
+    $contrasena = isset($_POST['contrasena']) ? $_POST['contrasena'] : null;
 
-    $sql = "SELECT dni, contrasena, tipo_usuario FROM Usuario WHERE dni = ?";
-    $params = [$dni];
-    $stmt = sqlsrv_query($conn, $sql, $params);
+    if ($dni && $contrasena) {
+        $sql = "SELECT dni, nombre, contrasena, tipo_usuario FROM Usuario WHERE dni = ? AND tipo_usuario = 'admin'";
+        $params = [$dni];
+        $stmt = sqlsrv_query($conn, $sql, $params);
 
-    if ($stmt && sqlsrv_has_rows($stmt)) {
-        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-        if (password_verify($contrasena, $row['contrasena'])) {
-            $_SESSION['dni'] = $row['dni'];
-            $_SESSION['tipo_usuario'] = $row['tipo_usuario'];
-            echo "<script>alert('Login exitoso. Bienvenido!');</script>";
+        if ($stmt && sqlsrv_has_rows($stmt)) {
+            $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            if (password_verify($contrasena, $row['contrasena'])) {
+                $_SESSION['dni'] = $row['dni'];
+                $_SESSION['nombre'] = $row['nombre']; // Guardar el nombre en la sesión
+                $_SESSION['tipo_usuario'] = $row['tipo_usuario'];
+                header("Location: index.php");
+                exit();
+            } else {
+                echo "<script>alert('Contraseña incorrecta.');</script>";
+            }
         } else {
-            echo "<script>alert('Contraseña incorrecta.');</script>";
+            echo "<script>alert('Usuario no encontrado o no es administrador.');</script>";
         }
+        sqlsrv_free_stmt($stmt);
     } else {
-        echo "<script>alert('Usuario no encontrado.');</script>";
+        echo "<script>alert('Faltan datos para iniciar sesión.');</script>";
+    }
+}
+
+// Obtener usuarios registrados para mostrarlos
+$users = [];
+$sql = "SELECT dni, nombre, email, tipo_usuario FROM Usuario";
+$stmt = sqlsrv_query($conn, $sql);
+if ($stmt) {
+    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+        $users[] = $row;
     }
     sqlsrv_free_stmt($stmt);
+} else {
+    echo "<!-- Error al obtener usuarios: " . print_r(sqlsrv_errors(), true) . " -->";
 }
 
 sqlsrv_close($conn);
@@ -71,7 +99,7 @@ sqlsrv_close($conn);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zynemax+ | Plataforma de Cine</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
     <header>
@@ -81,10 +109,10 @@ sqlsrv_close($conn);
         <a href="#cartelera">Cartelera</a>
         <a href="#sedes">Sedes</a>
         <?php if (!isset($_SESSION['dni'])): ?>
-            <a href="#" onclick="showForm('login')">Login</a>
-            <a href="#" onclick="showForm('register')">Register</a>
+            <a href="#" onclick="showForm('login')">Login (Admin)</a>
+            <a href="#" onclick="showForm('register')">Register (Cliente)</a>
         <?php else: ?>
-            <a href="logout.php">Logout (DNI: <?php echo $_SESSION['dni']; ?>)</a>
+            <a href="/logout.php">Logout (<?php echo $_SESSION['nombre']; ?>)</a>
         <?php endif; ?>
     </nav>
     <div class="container">
@@ -92,7 +120,7 @@ sqlsrv_close($conn);
         <?php if (!isset($_SESSION['dni'])): ?>
             <div class="auth-section">
                 <div id="login-form" class="form-container" style="display: none;">
-                    <h2>Iniciar Sesión</h2>
+                    <h2>Iniciar Sesión (Admin)</h2>
                     <form method="POST">
                         <input type="number" name="dni" placeholder="DNI" required>
                         <input type="password" name="contrasena" placeholder="Contraseña" required>
@@ -100,23 +128,19 @@ sqlsrv_close($conn);
                     </form>
                 </div>
                 <div id="register-form" class="form-container" style="display: none;">
-                    <h2>Registrarse</h2>
+                    <h2>Registrarse (Cliente)</h2>
                     <form method="POST">
                         <input type="number" name="dni" placeholder="DNI" required>
-                        <input type="text" name="nombre" placeholder="Nombre" required>
-                        <input type="email" name="email" placeholder="Correo" required>
+                        <input type="text" name="nombre" placeholder="Nombre" required maxlength="50">
+                        <input type="email" name="email" placeholder="Correo" required maxlength="50">
                         <input type="password" name="contrasena" placeholder="Contraseña" required>
-                        <select name="tipo_usuario" required>
-                            <option value="cliente">Cliente</option>
-                            <option value="admin">Admin</option>
-                        </select>
                         <button type="submit" name="register">Registrarse</button>
                     </form>
                 </div>
             </div>
         <?php else: ?>
             <div class="welcome-message">
-                <h2>Bienvenido, <?php echo $_SESSION['dni']; ?> (<?php echo $_SESSION['tipo_usuario']; ?>)</h2>
+                <h2>Bienvenido, <?php echo $_SESSION['nombre']; ?> (<?php echo $_SESSION['tipo_usuario']; ?>)</h2>
                 <p>Explora la cartelera y reserva tus entradas.</p>
             </div>
         <?php endif; ?>
@@ -132,10 +156,24 @@ sqlsrv_close($conn);
             <h2>Sedes</h2>
             <p>Próximamente: Selecciona tu cine favorito.</p>
         </div>
+
+        <!-- Sección Usuarios Registrados -->
+        <div class="section" id="users">
+            <h2>Usuarios Registrados</h2>
+            <?php if (!empty($users)): ?>
+                <ul>
+                    <?php foreach ($users as $user): ?>
+                        <li>DNI: <?php echo $user['dni']; ?> - Nombre: <?php echo $user['nombre']; ?> - Email: <?php echo $user['email']; ?> (<?php echo $user['tipo_usuario']; ?>)</li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php else: ?>
+                <p>No hay usuarios registrados aún.</p>
+            <?php endif; ?>
+        </div>
     </div>
     <footer>
         <p>© 2025 Zynemax+ | Todos los derechos reservados</p>
     </footer>
-    <script src="scrip.js"></script>
+    <script src="/scrip.js" defer></script>
 </body>
 </html>
