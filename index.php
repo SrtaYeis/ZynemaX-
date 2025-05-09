@@ -22,13 +22,11 @@ if ($conn === false) {
 
 // Procesar registro (solo cliente)
 if (isset($_POST['register'])) {
-    echo "<!-- Datos recibidos del formulario: " . print_r($_POST, true) . " -->";
-
     $dni = isset($_POST['dni']) ? (int)$_POST['dni'] : null;
     $nombre = isset($_POST['nombre']) ? substr($_POST['nombre'], 0, 50) : null;
     $email = isset($_POST['email']) ? substr($_POST['email'], 0, 50) : null;
     $contrasena = isset($_POST['contrasena']) ? password_hash($_POST['contrasena'], PASSWORD_DEFAULT) : null;
-    $tipo_usuario = 'cliente'; // Fijo como cliente
+    $tipo_usuario = 'cliente';
 
     if ($dni && $nombre && $email && $contrasena) {
         $sql = "INSERT INTO Usuario (dni, nombre, email, contrasena, tipo_usuario) VALUES (?, ?, ?, ?, ?)";
@@ -36,14 +34,17 @@ if (isset($_POST['register'])) {
         $stmt = sqlsrv_query($conn, $sql, $params);
 
         if ($stmt === false) {
-            echo "<script>alert('Error al registrarse: " . print_r(sqlsrv_errors(), true) . "');</script>";
+            // Redirigir con un parámetro de error para mostrarlo en la página
+            header("Location: index.php?error=1");
+            exit();
         } else {
             header("Location: index.php");
             exit();
         }
         sqlsrv_free_stmt($stmt);
     } else {
-        echo "<script>alert('Faltan datos en el formulario.');</script>";
+        header("Location: index.php?error=2");
+        exit();
     }
 }
 
@@ -66,14 +67,17 @@ if (isset($_POST['login'])) {
                 header("Location: index.php");
                 exit();
             } else {
-                echo "<script>alert('Contraseña incorrecta.');</script>";
+                header("Location: index.php?error=3");
+                exit();
             }
         } else {
-            echo "<script>alert('Usuario no encontrado.');</script>";
+            header("Location: index.php?error=4");
+            exit();
         }
         sqlsrv_free_stmt($stmt);
     } else {
-        echo "<script>alert('Faltan datos para iniciar sesión.');</script>";
+        header("Location: index.php?error=5");
+        exit();
     }
 }
 
@@ -106,6 +110,14 @@ sqlsrv_close($conn);
         <!-- Formularios de Login y Registro -->
         <?php if (!isset($_SESSION['dni'])): ?>
             <div class="auth-section">
+                <?php
+                $error = isset($_GET['error']) ? $_GET['error'] : 0;
+                if ($error == 1) echo "<p style='color:red;'>Error al registrarse. Verifica los datos.</p>";
+                if ($error == 2) echo "<p style='color:red;'>Faltan datos en el formulario.</p>";
+                if ($error == 3) echo "<p style='color:red;'>Contraseña incorrecta.</p>";
+                if ($error == 4) echo "<p style='color:red;'>Usuario no encontrado.</p>";
+                if ($error == 5) echo "<p style='color:red;'>Faltan datos para iniciar sesión.</p>";
+                ?>
                 <div id="login-form" class="form-container" style="display: none;">
                     <h2>Iniciar Sesión</h2>
                     <form method="POST">
