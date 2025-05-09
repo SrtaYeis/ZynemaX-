@@ -153,84 +153,13 @@ sqlsrv_close($conn);
         <!-- Sección Cartelera -->
         <div class="section" id="cartelera">
             <h2>Cartelera</h2>
-            <div class="movie-list">
-                <div class="movie">
-                    <h3>El Misterio del Faro</h3>
-                    <p><strong>Género:</strong> Suspenso</p>
-                    <p><strong>Duración:</strong> 1h 45min</p>
-                    <p><strong>Horarios:</strong> 14:00, 16:30, 19:00</p>
-                    <p><strong>Sinopsis:</strong> Un detective investiga desapariciones en un faro remoto.</p>
-                    <?php if (isset($_SESSION['dni'])): ?>
-                        <button onclick="alert('Funcionalidad de reserva en desarrollo')">Reservar</button>
-                    <?php else: ?>
-                        <p><em>Inicia sesión para reservar.</em></p>
-                    <?php endif; ?>
-                </div>
-                <div class="movie">
-                    <h3>Aventuras en el Espacio</h3>
-                    <p><strong>Género:</strong> Ciencia Ficción</p>
-                    <p><strong>Duración:</strong> 2h 10min</p>
-                    <p><strong>Horarios:</strong> 15:00, 17:30, 20:00</p>
-                    <p><strong>Sinopsis:</strong> Una tripulación explora un planeta desconocido.</p>
-                    <?php if (isset($_SESSION['dni'])): ?>
-                        <button onclick="alert('Funcionalidad de reserva en desarrollo')">Reservar</button>
-                    <?php else: ?>
-                        <p><em>Inicia sesión para reservar.</em></p>
-                    <?php endif; ?>
-                </div>
-                <div class="movie">
-                    <h3>Amor en la Ciudad</h3>
-                    <p><strong>Género:</strong> Romance</p>
-                    <p><strong>Duración:</strong> 1h 30min</p>
-                    <p><strong>Horarios:</strong> 13:00, 16:00, 18:30</p>
-                    <p><strong>Sinopsis:</strong> Dos desconocidos se encuentran en una gran ciudad.</p>
-                    <?php if (isset($_SESSION['dni'])): ?>
-                        <button onclick="alert('Funcionalidad de reserva en desarrollo')">Reservar</button>
-                    <?php else: ?>
-                        <p><em>Inicia sesión para reservar.</em></p>
-                    <?php endif; ?>
-                </div>
-            </div>
+            <p>Próximamente: Lista de películas disponibles.</p>
         </div>
 
         <!-- Sección Sedes -->
         <div class="section" id="sedes">
             <h2>Sedes</h2>
-            <div class="cinema-list">
-                <div class="cinema">
-                    <h3>Zynemax+ Centro</h3>
-                    <p><strong>Dirección:</strong> Av. Principal 123, Ciudad Central</p>
-                    <p><strong>Teléfono:</strong> (01) 555-1234</p>
-                    <p><strong>Salas:</strong> 5 (2D, 3D)</p>
-                    <?php if (isset($_SESSION['dni'])): ?>
-                        <button onclick="alert('Funcionalidad de selección en desarrollo')">Seleccionar</button>
-                    <?php else: ?>
-                        <p><em>Inicia sesión para seleccionar.</em></p>
-                    <?php endif; ?>
-                </div>
-                <div class="cinema">
-                    <h3>Zynemax+ Norte</h3>
-                    <p><strong>Dirección:</strong> Calle Norte 456, Zona Norte</p>
-                    <p><strong>Teléfono:</strong> (01) 555-5678</p>
-                    <p><strong>Salas:</strong> 4 (2D, IMAX)</p>
-                    <?php if (isset($_SESSION['dni'])): ?>
-                        <button onclick="alert('Funcionalidad de selección en desarrollo')">Seleccionar</button>
-                    <?php else: ?>
-                        <p><em>Inicia sesión para seleccionar.</em></p>
-                    <?php endif; ?>
-                </div>
-                <div class="cinema">
-                    <h3>Zynemax+ Sur</h3>
-                    <p><strong>Dirección:</strong> Av. Sur 789, Zona Sur</p>
-                    <p><strong>Teléfono:</strong> (01) 555-9012</p>
-                    <p><strong>Salas:</strong> 6 (2D, 3D, VIP)</p>
-                    <?php if (isset($_SESSION['dni'])): ?>
-                        <button onclick="alert('Funcionalidad de selección en desarrollo')">Seleccionar</button>
-                    <?php else: ?>
-                        <p><em>Inicia sesión para seleccionar.</em></p>
-                    <?php endif; ?>
-                </div>
-            </div>
+            <p>Próximamente: Selecciona tu cine favorito.</p>
         </div>
     </div>
     <footer>
