@@ -79,6 +79,55 @@ if (isset($_POST['login'])) {
     }
 }
 
+// Procesar reserva
+if (isset($_POST['make_reservation']) && isset($_SESSION['dni'])) {
+    $id_funcion = isset($_POST['id_funcion']) ? (int)$_POST['id_funcion'] : null;
+    $dni_usuario = $_SESSION['dni'];
+
+    if ($id_funcion) {
+        $sql = "INSERT INTO Reserva (id_reserva, dni_usuario, fecha_reserva, estado_reserva) VALUES (NEXT VALUE FOR Reserva_seq, ?, GETDATE(), 'pendiente')";
+        $params = [$dni_usuario];
+        $stmt = sqlsrv_query($conn, $sql, $params);
+
+        if ($stmt === false) {
+            header("Location: index.php?error=6");
+            exit();
+        } else {
+            $id_reserva = sqlsrv_get_field($stmt, 0);
+            $sql = "INSERT INTO Reserva_funcion (id_reserva_funcion, id_reserva, id_funcion) VALUES (NEXT VALUE FOR Reserva_funcion_seq, ?, ?)";
+            $params = [$id_reserva, $id_funcion];
+            $stmt = sqlsrv_query($conn, $sql, $params);
+            if ($stmt === false) {
+                header("Location: index.php?error=7");
+                exit();
+            } else {
+                header("Location: index.php?reservation_success=1");
+                exit();
+            }
+        }
+        sqlsrv_free_stmt($stmt);
+    } else {
+        header("Location: index.php?error=8");
+        exit();
+    }
+}
+
+// Obtener cartelera
+$cartelera = [];
+if ($conn) {
+    $sql = "SELECT f.id_funcion, p.titulo, s.nombre_sala, f.fecha_hora, s.id_sede 
+            FROM Funcion f 
+            JOIN Pelicula p ON f.id_pelicula = p.id_pelicula 
+            JOIN Sala s ON f.id_sala = s.id_sala";
+    $stmt = sqlsrv_query($conn, $sql);
+    if ($stmt) {
+        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $cartelera[] = $row;
+        }
+    }
+    sqlsrv_free_stmt($stmt);
+}
+
 sqlsrv_close($conn);
 ?>
 
@@ -143,6 +192,9 @@ sqlsrv_close($conn);
                 <?php if (isset($_GET['login_success'])): ?>
                     <h2>Bienvenido, <?php echo $_SESSION['nombre']; ?> (<?php echo $_SESSION['tipo_usuario']; ?>)</h2>
                     <p>Explora la cartelera y reserva tus entradas.</p>
+                <?php elseif (isset($_GET['reservation_success'])): ?>
+                    <h2>Bienvenido, <?php echo $_SESSION['nombre']; ?> (<?php echo $_SESSION['tipo_usuario']; ?>)</h2>
+                    <p>Reserva realizada con éxito. ¡Disfruta tu película!</p>
                 <?php else: ?>
                     <h2>Bienvenido, <?php echo $_SESSION['nombre']; ?> (<?php echo $_SESSION['tipo_usuario']; ?>)</h2>
                     <p>Explora la cartelera y reserva tus entradas.</p>
@@ -153,7 +205,26 @@ sqlsrv_close($conn);
         <!-- Sección Cartelera -->
         <div class="section" id="cartelera">
             <h2>Cartelera</h2>
-            <p>Próximamente: Lista de películas disponibles.</p>
+            <?php if (!empty($cartelera)): ?>
+                <?php foreach ($cartelera as $funcion): ?>
+                    <div class="movie-item">
+                        <h3><?php echo htmlspecialchars($funcion['titulo']); ?></h3>
+                        <p>Sala: <?php echo htmlspecialchars($funcion['nombre_sala']); ?></p>
+                        <p>Fecha y Hora: <?php echo $funcion['fecha_hora']->format('Y-m-d H:i'); ?></p>
+                        <p>Sede: <?php echo htmlspecialchars($funcion['id_sede']); ?></p>
+                        <?php if (isset($_SESSION['dni'])): ?>
+                            <form method="POST">
+                                <input type="hidden" name="id_funcion" value="<?php echo $funcion['id_funcion']; ?>">
+                                <button type="submit" name="make_reservation">Reservar</button>
+                            </form>
+                        <?php else: ?>
+                            <p>Debes iniciar sesión para reservar.</p>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p>No hay funciones disponibles en este momento.</p>
+            <?php endif; ?>
         </div>
 
         <!-- Sección Sedes -->
