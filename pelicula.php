@@ -6,7 +6,7 @@ session_start();
 // Conexión a la base de datos
 $serverName = "database-zynemaxplus-server.database.windows.net";
 $connectionInfo = [
-    "Database" => "database-zynemaxplus-server",
+    "Database" => "ZynemaxDB",
     "UID" => "zynemaxplus",
     "PWD" => "grupo2_1al10",
     "Encrypt" => true,
@@ -80,13 +80,6 @@ if (isset($_POST['select_butaca'])) {
 
 // Procesar reserva
 if (isset($_POST['confirm_reservation'])) {
-    // Depuración: Mostrar estado de las sesiones
-    echo "Debug: Iniciando confirmación de reserva<br>";
-    echo "Debug: selected_movie = " . (isset($_SESSION['selected_movie']) ? $_SESSION['selected_movie'] : 'No definido') . "<br>";
-    echo "Debug: selected_sala = " . (isset($_SESSION['selected_sala']) ? $_SESSION['selected_sala'] : 'No definido') . "<br>";
-    echo "Debug: selected_butaca = " . (isset($_SESSION['selected_butaca']) ? $_SESSION['selected_butaca'] : 'No definido') . "<br>";
-    echo "Debug: function_id = " . (isset($_SESSION['function_id']) ? $_SESSION['function_id'] : 'No definido') . "<br>";
-
     // Validación 4: Verificar que todos los datos necesarios estén presentes
     if (!isset($_SESSION['selected_movie']) || !isset($_SESSION['selected_sala']) || !isset($_SESSION['selected_butaca']) || !isset($_SESSION['function_id'])) {
         echo "<p style='color:red;'>Error: Faltan datos para completar la reserva. Por favor, reinicie el proceso.</p>";
@@ -100,43 +93,45 @@ if (isset($_POST['confirm_reservation'])) {
     $fecha_reserva = date('Y-m-d H:i:s');
     $estado_reserva = 'activa';
 
-    echo "Debug: Intentando insertar en Reserva<br>";
     $sql = "INSERT INTO Reserva (dni_usuario, fecha_reserva, estado_reserva) VALUES (?, ?, ?)";
     $params = [$dni_usuario, $fecha_reserva, $estado_reserva];
     $stmt = sqlsrv_query($conn, $sql, $params);
 
     if ($stmt === false) {
-        echo "Error al crear reserva: " . print_r(sqlsrv_errors(), true) . "<br>";
+        echo "<p style='color:red;'>Error al crear reserva: " . print_r(sqlsrv_errors(), true) . "</p>";
+        echo "<a href='pelicula.php'>Volver</a>";
         sqlsrv_close($conn);
         ob_end_flush();
         exit();
     }
 
     // Obtener el ID de la reserva
-    echo "Debug: Obteniendo id_reserva<br>";
     $sql = "SELECT SCOPE_IDENTITY() AS id_reserva";
     $stmt = sqlsrv_query($conn, $sql);
     $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
     $id_reserva = $row['id_reserva'];
 
     // Vincular la reserva con la función
-    echo "Debug: Vinculando reserva con función<br>";
     $sql = "INSERT INTO Reserva_funcion (id_reserva, id_funcion) VALUES (?, ?)";
     $params = [$id_reserva, $_SESSION['function_id']];
     $stmt = sqlsrv_query($conn, $sql, $params);
 
     if ($stmt === false) {
-        echo "Error al vincular reserva con función: " . print_r(sqlsrv_errors(), true) . "<br>";
+        echo "<p style='color:red;'>Error al vincular reserva con función: " . print_r(sqlsrv_errors(), true) . "</p>";
+        echo "<a href='pelicula.php'>Volver</a>";
         sqlsrv_close($conn);
         ob_end_flush();
         exit();
     }
 
     $_SESSION['reservation_id'] = $id_reserva;
-    echo "Debug: Redirigiendo a comprobante con reservation_id = " . $id_reserva . "<br>";
-    header("Location: pelicula.php?step=comprobante");
-    exit();
+    // Mostrar mensaje de éxito en lugar de redirigir
+    echo "<p style='color:green;'>¡Su reserva fue exitosa! Reserva ID: " . $id_reserva . "</p>";
+    echo "<a href='pelicula.php'>Volver</a>";
     sqlsrv_free_stmt($stmt);
+    sqlsrv_close($conn);
+    ob_end_flush();
+    exit();
 }
 
 // Simular compra
@@ -175,7 +170,7 @@ if (isset($_POST['process_payment'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zynemax+ | Películas</title>
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
     <header>
@@ -274,12 +269,11 @@ if (isset($_POST['process_payment'])) {
             </div>
         <?php endif; ?>
 
-        <!-- Sección de Comprobante -->
+        <!-- Sección de Comprobante (desactivada temporalmente) -->
         <?php if (isset($_GET['step']) && $_GET['step'] === 'comprobante' && isset($_SESSION['reservation_id'])): ?>
             <div class="form-container">
                 <h2>Comprobante de Reserva</h2>
                 <?php
-                echo "Debug: Entrando en sección comprobante con reservation_id = " . $_SESSION['reservation_id'] . "<br>";
                 $sql = "SELECT p.titulo, s.nombre_sala, b.fila, b.numero_butaca, f.fecha_hora_funcion 
                         FROM Pelicula p 
                         JOIN Funcion f ON p.id_pelicula = f.id_pelicula 
@@ -298,7 +292,7 @@ if (isset($_POST['process_payment'])) {
                     echo "<p><strong>Fecha y Hora:</strong> " . $row['fecha_hora_funcion']->format('Y-m-d H:i:s') . "</p>";
                     echo "<p><strong>Reserva ID:</strong> " . $_SESSION['reservation_id'] . "</p>";
                 } else {
-                    echo "Debug: Error o sin resultados en la consulta: " . print_r(sqlsrv_errors(), true) . "<br>";
+                    echo "<p>Error al cargar el comprobante: " . print_r(sqlsrv_errors(), true) . "</p>";
                 }
                 sqlsrv_free_stmt($stmt);
                 ?>
@@ -317,7 +311,7 @@ if (isset($_POST['process_payment'])) {
     <footer>
         <p>© 2025 Zynemax+ | Todos los derechos reservados</p>
     </footer>
-    <script src="/scrip.js" defer></script>
+    <script src="/script.js" defer></script>
     <?php sqlsrv_close($conn); ?>
 </body>
 </html>
