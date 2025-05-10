@@ -27,8 +27,7 @@ if (!isset($_SESSION['dni'])) {
 
 // Procesar reserva
 if (isset($_POST['confirm_reservation'])) {
-    // Validación: Verificar que todos los datos necesarios estén presentes
-    if (!isset($_POST['funcion_id']) || !isset($_POST['sede_id']) || !isset($_POST['sala_id']) || !isset($_POST['butaca_id'])) {
+    if (!isset($_POST['funcion_id']) || !isset($_POST['butaca_id'])) {
         echo "<p style='color:red;'>Error: Faltan datos para completar la reserva. Por favor, complete todos los campos.</p>";
         echo "<a href='pelicula.php'>Volver</a>";
         sqlsrv_close($conn);
@@ -41,12 +40,26 @@ if (isset($_POST['confirm_reservation'])) {
     $dni_usuario = $_SESSION['dni'];
     $fecha_reserva = date('Y-m-d H:i:s');
 
-    // Validar que la función existe
-    $sql = "SELECT id_funcion FROM Funcion WHERE id_funcion = ?";
+    // Validar que la función existe y obtener su id_sala
+    $sql = "SELECT id_funcion, id_sala FROM Funcion WHERE id_funcion = ?";
     $params = [$funcion_id];
     $stmt = sqlsrv_query($conn, $sql, $params);
-    if (!$stmt || !sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+    if (!$stmt || !($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC))) {
         echo "<p style='color:red;'>Error: La función seleccionada no existe.</p>";
+        echo "<a href='pelicula.php'>Volver</a>";
+        sqlsrv_close($conn);
+        ob_end_flush();
+        exit();
+    }
+    $id_sala = $row['id_sala'];
+    sqlsrv_free_stmt($stmt);
+
+    // Validar que la butaca pertenece a la sala de la función
+    $sql = "SELECT id_butaca FROM Butaca WHERE id_butaca = ? AND id_sala = ?";
+    $params = [$butaca_id, $id_sala];
+    $stmt = sqlsrv_query($conn, $sql, $params);
+    if (!$stmt || !sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+        echo "<p style='color:red;'>Error: La butaca seleccionada no pertenece a la sala de la función.</p>";
         echo "<a href='pelicula.php'>Volver</a>";
         sqlsrv_close($conn);
         ob_end_flush();
@@ -99,6 +112,49 @@ if (isset($_POST['confirm_reservation'])) {
     exit();
     sqlsrv_free_stmt($stmt);
 }
+
+// Obtener sedes (para pre-cargar el dropdown)
+$sedes = [];
+$sql = "SELECT id_sede, ciudad_sede FROM Sede";
+$stmt = sqlsrv_query($conn, $sql);
+if ($stmt !== false) {
+    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+        $sedes[$row['id_sede']] = $row['ciudad_sede'];
+    }
+}
+sqlsrv_free_stmt($stmt);
+
+// Obtener butacas (se actualizará dinámicamente por JavaScript)
+$butacas = [];
+if (isset($_GET['sala_id'])) {
+    $sala_id = (int)$_GET['sala_id'];
+    $sql = "SELECT id_butaca, fila, numero_butaca FROM Butaca WHERE id_sala = ?";
+    $params = [$sala_id];
+    $stmt = sqlsrv_query($conn, $sql, $params);
+    if ($stmt !== false) {
+        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $butacas[] = $row;
+        }
+    }
+    sqlsrv_free_stmt($stmt);
+}
+
+// Obtener sede de una sala (para pre-seleccionar la sede)
+$sede_seleccionada = '';
+if (isset($_GET['funcion_id'])) {
+    $funcion_id = (int)$_GET['funcion_id'];
+    $sql = "SELECT s.id_sede, se.ciudad_sede 
+            FROM Funcion f 
+            JOIN Sala s ON f.id_sala = s.id_sala 
+            JOIN Sede se ON s.id_sede = se.id_sede 
+            WHERE f.id_funcion = ?";
+    $params = [$funcion_id];
+    $stmt = sqlsrv_query($conn, $sql, $params);
+    if ($stmt !== false && $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+        $sede_seleccionada = $row['id_sede'];
+    }
+    sqlsrv_free_stmt($stmt);
+}
 ?>
 
 <!DOCTYPE html>
@@ -130,10 +186,10 @@ if (isset($_POST['confirm_reservation'])) {
                 <form method="POST">
                     <!-- Selección de Función -->
                     <label for="funcion_id">Función (Película, Sala, Fecha y Hora):</label>
-                    <select name="funcion_id" id="funcion_id" required onchange="updateSede()">
+                    <select name="funcion_id" id="funcion_id" required onchange="updateSedeAndButacas(this.value)">
                         <option value="">Seleccione una función</option>
                         <?php
-                        $sql = "SELECT f.id_funcion, p.titulo, s.nombre_sala, f.fecha_hora
+                        $sql = "SELECT f.id_funcion, p.titulo, s.nombre_sala, f.fecha_hora, f.id_sala
                                 FROM Funcion f
                                 JOIN Pelicula p ON f.id_pelicula = p.id_pelicula
                                 JOIN Sala s ON f.id_sala = s.id_sala
@@ -157,34 +213,25 @@ if (isset($_POST['confirm_reservation'])) {
 
                     <!-- Selección de Sede -->
                     <label for="sede_id">Sede:</label>
-                    <select name="sede_id" id="sede_id" required onchange="updateSalas()">
+                    <select name="sede_id" id="sede_id" required>
                         <option value="">Seleccione una sede</option>
                         <?php
-                        $sql = "SELECT id_sede, ciudad_sede FROM Sede";
-                        $stmt = sqlsrv_query($conn, $sql);
-                        if ($stmt === false) {
-                            echo "<p style='color:red;'>Error al cargar las sedes: " . print_r(sqlsrv_errors(), true) . "</p>";
-                        } elseif (!sqlsrv_has_rows($stmt)) {
-                            echo "<p style='color:red;'>No hay sedes disponibles.</p>";
-                        } else {
-                            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                                echo "<option value='" . $row['id_sede'] . "'>" . $row['ciudad_sede'] . "</option>";
-                            }
+                        foreach ($sedes as $id => $ciudad) {
+                            $selected = ($id == $sede_seleccionada) ? 'selected' : '';
+                            echo "<option value='$id' $selected>$ciudad</option>";
                         }
-                        sqlsrv_free_stmt($stmt);
                         ?>
-                    </select><br><br>
-
-                    <!-- Selección de Sala -->
-                    <label for="sala_id">Sala:</label>
-                    <select name="sala_id" id="sala_id" required onchange="updateButacas()">
-                        <option value="">Seleccione una sala</option>
                     </select><br><br>
 
                     <!-- Selección de Butaca -->
                     <label for="butaca_id">Butaca:</label>
                     <select name="butaca_id" id="butaca_id" required>
                         <option value="">Seleccione una butaca</option>
+                        <?php
+                        foreach ($butacas as $butaca) {
+                            echo "<option value='" . $butaca['id_butaca'] . "'>Fila " . $butaca['fila'] . ", Número " . $butaca['numero_butaca'] . "</option>";
+                        }
+                        ?>
                     </select><br><br>
 
                     <button type="submit" name="confirm_reservation">Confirmar Reserva</button>
