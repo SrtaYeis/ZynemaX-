@@ -18,3 +18,59 @@ function showForm(formType) {
         profileForm.style.display = 'block';
     }
 }
+
+function updateSedeAndButacas(funcionId) {
+    const sedeSelect = document.getElementById('sede_id');
+    const butacaSelect = document.getElementById('butaca_id');
+    const funcionSelect = document.getElementById('funcion_id');
+
+    // Limpiar los selects dependientes
+    sedeSelect.innerHTML = '<option value="">Seleccione una sede</option>';
+    butacaSelect.innerHTML = '<option value="">Seleccione una butaca</option>';
+
+    if (funcionId) {
+        const selectedOption = funcionSelect.options[funcionSelect.selectedIndex];
+        const salaId = selectedOption.getAttribute('data-sala-id');
+
+        // Hacer una solicitud AJAX a la misma página
+        fetch(`pelicula.php?funcion_id=${funcionId}&sala_id=${salaId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error en la solicitud: ' + response.statusText);
+                }
+                return response.text();
+            })
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newSedeSelect = doc.getElementById('sede_id');
+                const newButacaSelect = doc.getElementById('butaca_id');
+
+                if (newSedeSelect && newButacaSelect) {
+                    sedeSelect.innerHTML = newSedeSelect.innerHTML;
+                    butacaSelect.innerHTML = newButacaSelect.innerHTML;
+
+                    // Seleccionar la sede automáticamente si hay una pre-seleccionada
+                    const selectedSede = newSedeSelect.value;
+                    if (selectedSede) {
+                        Array.from(sedeSelect.options).forEach(option => {
+                            if (option.value == selectedSede && option.value !== '') {
+                                option.selected = true;
+                            }
+                        });
+                    }
+                } else {
+                    console.error('No se encontraron los elementos sede o butaca en la respuesta.');
+                }
+            })
+            .catch(error => console.error('Error al actualizar sede y butacas:', error));
+    }
+}
+
+// Llamar a updateSedeAndButacas al cargar la página si ya hay una función seleccionada
+document.addEventListener('DOMContentLoaded', () => {
+    const funcionSelect = document.getElementById('funcion_id');
+    if (funcionSelect && funcionSelect.value) {
+        updateSedeAndButacas(funcionSelect.value);
+    }
+});
