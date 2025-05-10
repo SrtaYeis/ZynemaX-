@@ -33,8 +33,8 @@ if (isset($_POST['select_movie'])) {
     $sql = "SELECT f.id_funcion, f.id_sala, s.nombre_sala 
             FROM Funcion f 
             JOIN Sala s ON f.id_sala = s.id_sala 
-            WHERE f.id_pelicula = ?";
-    $params = [$movie_id];
+            WHERE f.id_pelicula = ? AND f.fecha_hora > ?";
+    $params = [$movie_id, date('Y-m-d H:i:s')];
     $stmt = sqlsrv_query($conn, $sql, $params);
     
     if ($stmt && $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
@@ -45,7 +45,7 @@ if (isset($_POST['select_movie'])) {
         header("Location: pelicula.php?step=butaca");
         exit();
     } else {
-        echo "<p style='color:red;'>No hay funciones disponibles para esta película. Por favor, seleccione otra película o contacte al administrador.</p>";
+        echo "<p style='color:red;'>No hay funciones disponibles para esta película en el futuro. Por favor, seleccione otra película o contacte al administrador.</p>";
         echo "<a href='pelicula.php'>Volver</a>";
         sqlsrv_close($conn);
         ob_end_flush();
@@ -58,14 +58,13 @@ if (isset($_POST['select_movie'])) {
 if (isset($_POST['select_butaca'])) {
     $butaca_id = $_POST['butaca_id'];
     
-    // Validación 3: Verificar que el asiento exista (sin verificar estado)
+    // Validación 3: Verificar que el asiento exista
     $sql = "SELECT id_butaca FROM Butaca WHERE id_butaca = ?";
     $params = [$butaca_id];
     $stmt = sqlsrv_query($conn, $sql, $params);
     
     if ($stmt && $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
         $_SESSION['selected_butaca'] = $butaca_id;
-        // No marcamos el asiento como ocupado, ya que no estamos usando el campo estado
         header("Location: pelicula.php?step=reserve");
         exit();
     } else {
@@ -91,18 +90,14 @@ if (isset($_POST['confirm_reservation'])) {
 
     $dni_usuario = $_SESSION['dni'];
     $fecha_reserva = date('Y-m-d H:i:s');
-    $estado_reserva = 'activa';
 
-    $sql = "INSERT INTO Reserva (dni_usuario, fecha_reserva, estado_reserva) VALUES (?, ?, ?)";
-    $params = [$dni_usuario, $fecha_reserva, $estado_reserva];
+    // Insertar en Reserva
+    $sql = "INSERT INTO Reserva (dni_usuario, fecha_reserva) VALUES (?, ?)";
+    $params = [$dni_usuario, $fecha_reserva];
     $stmt = sqlsrv_query($conn, $sql, $params);
 
     if ($stmt === false) {
-        echo "<p style='color:red;'>Error al crear reserva: " . print_r(sqlsrv_errors(), true) . "</p>";
-        echo "<a href='pelicula.php'>Volver</a>";
-        sqlsrv_close($conn);
-        ob_end_flush();
-        exit();
+        die("Error al crear reserva: " . print_r(sqlsrv_errors(), true));
     }
 
     // Obtener el ID de la reserva
@@ -111,33 +106,40 @@ if (isset($_POST['confirm_reservation'])) {
     $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
     $id_reserva = $row['id_reserva'];
 
-    // Vincular la reserva con la función
+    // Insertar en Reserva_funcion
     $sql = "INSERT INTO Reserva_funcion (id_reserva, id_funcion) VALUES (?, ?)";
     $params = [$id_reserva, $_SESSION['function_id']];
     $stmt = sqlsrv_query($conn, $sql, $params);
 
     if ($stmt === false) {
-        echo "<p style='color:red;'>Error al vincular reserva con función: " . print_r(sqlsrv_errors(), true) . "</p>";
-        echo "<a href='pelicula.php'>Volver</a>";
-        sqlsrv_close($conn);
-        ob_end_flush();
-        exit();
+        die("Error al vincular reserva con función: " . print_r(sqlsrv_errors(), true));
+    }
+
+    // Obtener el ID de Reserva_funcion
+    $sql = "SELECT SCOPE_IDENTITY() AS id_reserva_funcion";
+    $stmt = sqlsrv_query($conn, $sql);
+    $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+    $id_reserva_funcion = $row['id_reserva_funcion'];
+
+    // Insertar en Reserva_butaca
+    $sql = "INSERT INTO Reserva_butaca (id_reserva_funcion, id_butaca) VALUES (?, ?)";
+    $params = [$id_reserva_funcion, $_SESSION['selected_butaca']];
+    $stmt = sqlsrv_query($conn, $sql, $params);
+
+    if ($stmt === false) {
+        die("Error al vincular reserva con butaca: " . print_r(sqlsrv_errors(), true));
     }
 
     $_SESSION['reservation_id'] = $id_reserva;
-    // Mostrar mensaje de éxito en lugar de redirigir
-    echo "<p style='color:green;'>¡Su reserva fue exitosa! Reserva ID: " . $id_reserva . "</p>";
-    echo "<a href='pelicula.php'>Volver</a>";
-    sqlsrv_free_stmt($stmt);
-    sqlsrv_close($conn);
-    ob_end_flush();
+    $_SESSION['reserva_funcion_id'] = $id_reserva_funcion;
+    header("Location: pelicula.php?step=comprobante");
     exit();
+    sqlsrv_free_stmt($stmt);
 }
 
-// Simular compra
+// Procesar pago
 if (isset($_POST['process_payment'])) {
-    // Validación 5: Verificación simulada de la reserva
-    if (!isset($_SESSION['reservation_id'])) {
+    if (!isset($_SESSION['reserva_funcion_id'])) {
         echo "<p style='color:red;'>Error: No se encontró una reserva para procesar el pago.</p>";
         echo "<a href='pelicula.php'>Volver</a>";
         sqlsrv_close($conn);
@@ -145,22 +147,36 @@ if (isset($_POST['process_payment'])) {
         exit();
     }
 
-    // Simulación de pago
+    $id_reserva_funcion = $_SESSION['reserva_funcion_id'];
     $metodo_pago = $_POST['payment_method'];
-    $monto_pago = 10.00; // Monto fijo simulado
     $fecha_pago = date('Y-m-d H:i:s');
-    $estado_pago = 'completado'; // Simulación de éxito
+    $estado_pago = 'completado';
 
-    // No insertamos en la base de datos, solo simulamos el proceso
-    // Limpiar sesiones
+    // Obtener el precio de la película
+    $sql = "SELECT p.precio FROM Pelicula p JOIN Funcion f ON p.id_pelicula = f.id_pelicula WHERE f.id_funcion = ?";
+    $params = [$_SESSION['function_id']];
+    $stmt = sqlsrv_query($conn, $sql, $params);
+    $monto_pago = ($stmt && $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) ? $row['precio'] : 10.00; // Usar precio de la película o 10.00 por defecto
+    sqlsrv_free_stmt($stmt);
+
+    $sql = "INSERT INTO Pago (id_reserva_funcion, metodo_pago, fecha_pago, estado_pago) VALUES (?, ?, ?, ?)";
+    $params = [$id_reserva_funcion, $metodo_pago, $fecha_pago, $estado_pago];
+    $stmt = sqlsrv_query($conn, $sql, $params);
+
+    if ($stmt === false) {
+        die("Error al registrar pago: " . print_r(sqlsrv_errors(), true));
+    }
+
     unset($_SESSION['selected_movie']);
     unset($_SESSION['selected_sala']);
     unset($_SESSION['sala_name']);
     unset($_SESSION['selected_butaca']);
     unset($_SESSION['function_id']);
     unset($_SESSION['reservation_id']);
+    unset($_SESSION['reserva_funcion_id']);
     header("Location: pelicula.php?payment_success=1");
     exit();
+    sqlsrv_free_stmt($stmt);
 }
 ?>
 
@@ -195,10 +211,12 @@ if (isset($_POST['process_payment'])) {
             <div id="movies-form" class="form-container">
                 <h2>Selecciona una Película</h2>
                 <?php
-                $sql = "SELECT DISTINCT p.id_pelicula, p.titulo, p.duracion, p.clasificacion, p.fecha_estreno 
+                $sql = "SELECT DISTINCT p.id_pelicula, p.titulo, p.duracion, p.clasificacion, p.fecha_estreno, p.precio
                         FROM Pelicula p 
-                        JOIN Funcion f ON p.id_pelicula = f.id_pelicula";
-                $stmt = sqlsrv_query($conn, $sql);
+                        JOIN Funcion f ON p.id_pelicula = f.id_pelicula
+                        WHERE f.fecha_hora > ?";
+                $params = [date('Y-m-d H:i:s')];
+                $stmt = sqlsrv_query($conn, $sql, $params);
                 if ($stmt) {
                     if (sqlsrv_has_rows($stmt)) {
                         while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
@@ -208,11 +226,12 @@ if (isset($_POST['process_payment'])) {
                             echo "<p><strong>Duración:</strong> " . $row['duracion'] . " min</p>";
                             echo "<p><strong>Clasificación:</strong> " . $row['clasificacion'] . "</p>";
                             echo "<p><strong>Fecha Estreno:</strong> " . $row['fecha_estreno']->format('Y-m-d') . "</p>";
+                            echo "<p><strong>Precio:</strong> S/. " . number_format($row['precio'], 2) . "</p>";
                             echo "<button type='submit' name='select_movie'>Seleccionar</button>";
                             echo "</form>";
                         }
                     } else {
-                        echo "<p>No hay películas con funciones disponibles.</p>";
+                        echo "<p>No hay películas con funciones disponibles en el futuro.</p>";
                     }
                     sqlsrv_free_stmt($stmt);
                 } else {
@@ -226,10 +245,9 @@ if (isset($_POST['process_payment'])) {
         <?php if (isset($_GET['step']) && $_GET['step'] === 'butaca' && isset($_SESSION['selected_sala'])): ?>
             <div class="form-container">
                 <h2>Selecciona una Butaca</h2>
-                <p>Esa película se transmite en la sala <strong><?php echo $_SESSION['sala_name']; ?></strong>.</p>
+                <p>Esta película se transmite en la sala <strong><?php echo $_SESSION['sala_name']; ?></strong>.</p>
                 <h3>Asientos Disponibles:</h3>
                 <?php
-                // Depuración: Mostrar el id_sala
                 echo "Debug: id_sala seleccionado = " . $_SESSION['selected_sala'] . "<br>";
 
                 $sql = "SELECT id_butaca, fila, numero_butaca 
@@ -269,30 +287,33 @@ if (isset($_POST['process_payment'])) {
             </div>
         <?php endif; ?>
 
-        <!-- Sección de Comprobante (desactivada temporalmente) -->
-        <?php if (isset($_GET['step']) && $_GET['step'] === 'comprobante' && isset($_SESSION['reservation_id'])): ?>
+        <!-- Sección de Comprobante -->
+        <?php if (isset($_GET['step']) && $_GET['step'] === 'comprobante' && isset($_SESSION['reservation_id']) && isset($_SESSION['reserva_funcion_id'])): ?>
             <div class="form-container">
-                <h2>Comprobante de Reserva</h2>
+                <h2>Resumen de la Compra</h2>
                 <?php
-                $sql = "SELECT p.titulo, s.nombre_sala, b.fila, b.numero_butaca, f.fecha_hora_funcion 
-                        FROM Pelicula p 
-                        JOIN Funcion f ON p.id_pelicula = f.id_pelicula 
-                        JOIN Sala s ON f.id_sala = s.id_sala 
-                        JOIN Butaca b ON b.id_butaca = ? 
-                        JOIN Reserva_funcion rf ON rf.id_funcion = f.id_funcion 
-                        JOIN Reserva r ON r.id_reserva = rf.id_reserva 
-                        WHERE r.id_reserva = ? AND f.id_funcion = ?";
-                $params = [$_SESSION['selected_butaca'], $_SESSION['reservation_id'], $_SESSION['function_id']];
+                $sql = "SELECT r.id_reserva, r.fecha_reserva, rf.id_reserva_funcion, f.id_funcion, p.titulo, s.nombre_sala, b.fila, b.numero_butaca, f.fecha_hora AS fecha_hora_funcion
+                        FROM Reserva r
+                        JOIN Reserva_funcion rf ON r.id_reserva = rf.id_reserva
+                        JOIN Funcion f ON rf.id_funcion = f.id_funcion
+                        JOIN Pelicula p ON f.id_pelicula = p.id_pelicula
+                        JOIN Sala s ON f.id_sala = s.id_sala
+                        JOIN Reserva_butaca rb ON rf.id_reserva_funcion = rb.id_reserva_funcion
+                        JOIN Butaca b ON rb.id_butaca = b.id_butaca
+                        WHERE r.id_reserva = ? AND rf.id_reserva_funcion = ?";
+                $params = [$_SESSION['reservation_id'], $_SESSION['reserva_funcion_id']];
                 $stmt = sqlsrv_query($conn, $sql, $params);
                 if ($stmt && $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                     echo "<p><strong>Usuario:</strong> " . $_SESSION['nombre'] . "</p>";
+                    echo "<p><strong>Reserva ID:</strong> " . $row['id_reserva'] . "</p>";
+                    echo "<p><strong>Fecha de Reserva:</strong> " . $row['fecha_reserva']->format('Y-m-d H:i:s') . "</p>";
+                    echo "<p><strong>Función ID:</strong> " . $row['id_funcion'] . "</p>";
                     echo "<p><strong>Película:</strong> " . $row['titulo'] . "</p>";
                     echo "<p><strong>Sala:</strong> " . $row['nombre_sala'] . "</p>";
                     echo "<p><strong>Butaca:</strong> Fila " . $row['fila'] . ", Número " . $row['numero_butaca'] . "</p>";
-                    echo "<p><strong>Fecha y Hora:</strong> " . $row['fecha_hora_funcion']->format('Y-m-d H:i:s') . "</p>";
-                    echo "<p><strong>Reserva ID:</strong> " . $_SESSION['reservation_id'] . "</p>";
+                    echo "<p><strong>Fecha y Hora de la Función:</strong> " . $row['fecha_hora_funcion']->format('Y-m-d H:i:s') . "</p>";
                 } else {
-                    echo "<p>Error al cargar el comprobante: " . print_r(sqlsrv_errors(), true) . "</p>";
+                    echo "<p>Error al cargar el resumen: " . print_r(sqlsrv_errors(), true) . "</p>";
                 }
                 sqlsrv_free_stmt($stmt);
                 ?>
