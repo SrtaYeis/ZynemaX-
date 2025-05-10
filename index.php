@@ -1,4 +1,4 @@
-<?php
+<?
 ob_start(); // Iniciar el búfer de salida
 header("Content-Type: text/html; charset=UTF-8");
 session_start();
@@ -6,7 +6,7 @@ session_start();
 // Conexión a la base de datos
 $serverName = "database-zynemaxplus-server.database.windows.net";
 $connectionInfo = [
-    "Database" => "database-zynemaxplus-server",
+    "Database" => "ZynemaxDB",
     "UID" => "zynemaxplus",
     "PWD" => "grupo2_1al10",
     "Encrypt" => true,
@@ -25,92 +25,45 @@ if (!isset($_SESSION['dni'])) {
     exit();
 }
 
-// Procesar selección de película
-if (isset($_POST['select_movie'])) {
-    $movie_id = $_POST['movie_id'];
-    $_SESSION['selected_movie'] = $movie_id;
-    header("Location: pelicula.php?step=sede");
-    exit();
-}
-
-// Procesar selección de sede
-if (isset($_POST['select_sede'])) {
-    $sede_id = $_POST['sede_id'];
-    $_SESSION['selected_sede'] = $sede_id;
-    header("Location: pelicula.php?step=sala");
-    exit();
-}
-
-// Procesar selección de sala
-if (isset($_POST['select_sala'])) {
-    $sala_id = $_POST['sala_id'];
-    $funcion_id = $_POST['funcion_id'];
-    $sala_name = $_POST['sala_name'];
-    $_SESSION['selected_sala'] = $sala_id;
-    $_SESSION['function_id'] = $funcion_id;
-    $_SESSION['sala_name'] = $sala_name;
-    header("Location: pelicula.php?step=butaca");
-    exit();
-}
-
-// Procesar selección de butaca
-if (isset($_POST['select_butaca'])) {
-    $butaca_id = $_POST['butaca_id'];
-    $sql = "SELECT id_butaca FROM Butaca WHERE id_butaca = ? AND id_sala = ?";
-    $params = [$butaca_id, $_SESSION['selected_sala']];
-    $stmt = sqlsrv_query($conn, $sql, $params);
-    
-    if ($stmt && $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-        $_SESSION['selected_butaca'] = $butaca_id;
-        header("Location: pelicula.php?step=summary");
-        exit();
-    } else {
-        echo "<p style='color:red;'>El asiento seleccionado no existe o no pertenece a la sala. Por favor, elija otro.</p>";
-        echo "<a href='pelicula.php?step=butaca'>Volver</a>";
-        sqlsrv_close($conn);
-        ob_end_flush();
-        exit();
-    }
-    sqlsrv_free_stmt($stmt);
-}
-
-// Procesar confirmación de compra
-if (isset($_POST['confirm_purchase'])) {
-    if (!isset($_SESSION['selected_movie']) || !isset($_SESSION['selected_sede']) || !isset($_SESSION['selected_sala']) || !isset($_SESSION['selected_butaca']) || !isset($_SESSION['function_id'])) {
-        echo "<p style='color:red;'>Error: Faltan datos para completar la compra. Por favor, reinicie el proceso.</p>";
+// Procesar reserva
+if (isset($_POST['confirm_reservation'])) {
+    if (!isset($_POST['funcion_id']) || !isset($_POST['butaca_id'])) {
+        echo "<p style='color:red;'>Error: Faltan datos para completar la reserva. Por favor, complete todos los campos.</p>";
         echo "<a href='pelicula.php'>Volver</a>";
         sqlsrv_close($conn);
         ob_end_flush();
         exit();
     }
 
+    $funcion_id = $_POST['funcion_id'];
+    $butaca_id = $_POST['butaca_id'];
     $dni_usuario = $_SESSION['dni'];
     $fecha_reserva = date('Y-m-d H:i:s');
-    $movie_id = $_SESSION['selected_movie'];
-    $sala_id = $_SESSION['selected_sala'];
-    $funcion_id = $_SESSION['function_id'];
 
-    // Verificar si la función seleccionada existe o crearla
-    $sql = "SELECT id_funcion FROM Funcion WHERE id_pelicula = ? AND id_sala = ? AND fecha_hora = (
-        SELECT fecha_hora FROM Funcion WHERE id_funcion = ?
-    )";
-    $params = [$movie_id, $sala_id, $funcion_id];
+    // Validar que la función existe y obtener su id_sala
+    $sql = "SELECT id_funcion, id_sala FROM Funcion WHERE id_funcion = ?";
+    $params = [$funcion_id];
     $stmt = sqlsrv_query($conn, $sql, $params);
-    if ($stmt && !sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-        // Si no existe, insertar nueva función
-        $sql = "INSERT INTO Funcion (id_pelicula, id_sala, fecha_hora) VALUES (?, ?, (
-            SELECT fecha_hora FROM Funcion WHERE id_funcion = ?
-        ))";
-        $params = [$movie_id, $sala_id, $funcion_id];
-        $stmt = sqlsrv_query($conn, $sql, $params);
-        if ($stmt === false) {
-            echo "<p style='color:red;'>Error al crear función: " . print_r(sqlsrv_errors(), true) . "</p>";
-            echo "<a href='pelicula.php'>Volver</a>";
-            sqlsrv_close($conn);
-            ob_end_flush();
-            exit();
-        }
-        $funcion_id = sqlsrv_next_result($conn) ? sqlsrv_get_field(1, 0) : sqlsrv_errors();
+    if (!$stmt || !($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC))) {
+        echo "<p style='color:red;'>Error: La función seleccionada no existe.</p>";
+        echo "<a href='pelicula.php'>Volver</a>";
+        sqlsrv_close($conn);
+        ob_end_flush();
+        exit();
+    }
+    $id_sala = $row['id_sala'];
+    sqlsrv_free_stmt($stmt);
+
+    // Validar que la butaca pertenece a la sala de la función
+    $sql = "SELECT id_butaca FROM Butaca WHERE id_butaca = ? AND id_sala = ?";
+    $params = [$butaca_id, $id_sala];
+    $stmt = sqlsrv_query($conn, $sql, $params);
+    if (!$stmt || !sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+        echo "<p style='color:red;'>Error: La butaca seleccionada no pertenece a la sala de la función.</p>";
+        echo "<a href='pelicula.php'>Volver</a>";
+        sqlsrv_close($conn);
+        ob_end_flush();
+        exit();
     }
     sqlsrv_free_stmt($stmt);
 
@@ -119,124 +72,95 @@ if (isset($_POST['confirm_purchase'])) {
     $params = [$dni_usuario, $fecha_reserva];
     $stmt = sqlsrv_query($conn, $sql, $params);
     if ($stmt === false) {
-        echo "<p style='color:red;'>Error al crear reserva: " . print_r(sqlsrv_errors(), true) . "</p>";
-        echo "<a href='pelicula.php'>Volver</a>";
-        sqlsrv_close($conn);
-        ob_end_flush();
-        exit();
+        die("Error al crear reserva: " . print_r(sqlsrv_errors(), true));
     }
-    $id_reserva = sqlsrv_next_result($conn) ? sqlsrv_get_field(1, 0) : sqlsrv_errors();
 
-    // Vincular la reserva con la función en Reserva_funcion
+    // Obtener el ID de la reserva
+    $sql = "SELECT SCOPE_IDENTITY() AS id_reserva";
+    $stmt = sqlsrv_query($conn, $sql);
+    $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+    $id_reserva = $row['id_reserva'];
+    sqlsrv_free_stmt($stmt);
+
+    // Insertar en Reserva_funcion
     $sql = "INSERT INTO Reserva_funcion (id_reserva, id_funcion) VALUES (?, ?)";
     $params = [$id_reserva, $funcion_id];
     $stmt = sqlsrv_query($conn, $sql, $params);
     if ($stmt === false) {
-        echo "<p style='color:red;'>Error al vincular reserva con función: " . print_r(sqlsrv_errors(), true) . "</p>";
-        echo "<a href='pelicula.php'>Volver</a>";
-        sqlsrv_close($conn);
-        ob_end_flush();
-        exit();
-    }
-    $id_reserva_funcion = sqlsrv_next_result($conn) ? sqlsrv_get_field(1, 0) : sqlsrv_errors();
-
-    // Vincular la reserva con la butaca
-    $sql = "INSERT INTO Reserva_butaca (id_reserva_funcion, id_butaca) VALUES (?, ?)";
-    $params = [$id_reserva_funcion, $_SESSION['selected_butaca']];
-    $stmt = sqlsrv_query($conn, $sql, $params);
-    if ($stmt === false) {
-        echo "<p style='color:red;'>Error al vincular reserva con butaca: " . print_r(sqlsrv_errors(), true) . "</p>";
-        echo "<a href='pelicula.php'>Volver</a>";
-        sqlsrv_close($conn);
-        ob_end_flush();
-        exit();
+        die("Error al vincular reserva con función: " . print_r(sqlsrv_errors(), true));
     }
 
-    // Obtener el precio de la película
-    $sql = "SELECT precio FROM Pelicula WHERE id_pelicula = ?";
-    $params = [$_SESSION['selected_movie']];
-    $stmt = sqlsrv_query($conn, $sql, $params);
-    if ($stmt === false) {
-        echo "<p style='color:red;'>Error al obtener precio: " . print_r(sqlsrv_errors(), true) . "</p>";
-        echo "<a href='pelicula.php'>Volver</a>";
-        sqlsrv_close($conn);
-        ob_end_flush();
-        exit();
-    }
-    $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-    $monto_pago = $row['precio'];
-
-    // Insertar en Pago
-    $sql = "INSERT INTO Pago (id_reserva_funcion, metodo_pago, fecha_pago, estado_pago) VALUES (?, ?, ?, ?)";
-    $params = [$id_reserva_funcion, 'tarjeta', date('Y-m-d H:i:s'), 'pendiente'];
-    $stmt = sqlsrv_query($conn, $sql, $params);
-    if ($stmt === false) {
-        echo "<p style='color:red;'>Error al crear pago: " . print_r(sqlsrv_errors(), true) . "</p>";
-        echo "<a href='pelicula.php'>Volver</a>";
-        sqlsrv_close($conn);
-        ob_end_flush();
-        exit();
-    }
-
-    // Obtener el ID del pago
-    $sql = "SELECT SCOPE_IDENTITY() AS id_pago";
+    // Obtener el ID de Reserva_funcion
+    $sql = "SELECT SCOPE_IDENTITY() AS id_reserva_funcion";
     $stmt = sqlsrv_query($conn, $sql);
     $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-    $id_pago = $row['id_pago'];
+    $id_reserva_funcion = $row['id_reserva_funcion'];
+    sqlsrv_free_stmt($stmt);
 
-    $_SESSION['id_pago'] = $id_pago;
-    $_SESSION['monto_pago'] = $monto_pago;
-    header("Location: pelicula.php?step=payment");
+    // Insertar en Reserva_butaca
+    $sql = "INSERT INTO Reserva_butaca (id_reserva_funcion, id_butaca) VALUES (?, ?)";
+    $params = [$id_reserva_funcion, $butaca_id];
+    $stmt = sqlsrv_query($conn, $sql, $params);
+    if ($stmt === false) {
+        die("Error al vincular reserva con butaca: " . print_r(sqlsrv_errors(), true));
+    }
+
+    $_SESSION['reservation_id'] = $id_reserva;
+    $_SESSION['reserva_funcion_id'] = $id_reserva_funcion;
+    header("Location: pelicula.php?step=comprobante");
     exit();
     sqlsrv_free_stmt($stmt);
 }
 
-// Procesar simulación de pago
-if (isset($_POST['simulate_payment'])) {
-    if (!isset($_SESSION['id_pago']) || !isset($_SESSION['monto_pago'])) {
-        echo "<p style='color:red;'>Error: No se encontró un pago para procesar la simulación.</p>";
-        echo "<a href='pelicula.php'>Volver</a>";
-        sqlsrv_close($conn);
-        ob_end_flush();
-        exit();
+// Obtener sedes
+$sedes = [];
+$sql = "SELECT id_sede, ciudad_sede FROM Sede";
+$stmt = sqlsrv_query($conn, $sql);
+if ($stmt === false) {
+    $sedes_error = "Error al cargar las sedes: " . print_r(sqlsrv_errors(), true);
+} elseif (!sqlsrv_has_rows($stmt)) {
+    $sedes_error = "No hay sedes disponibles. Verifique la tabla Sede.";
+} else {
+    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+        $sedes[$row['id_sede']] = $row['ciudad_sede'];
     }
+}
+sqlsrv_free_stmt($stmt);
 
-    $id_pago = $_SESSION['id_pago'];
-    $monto_pago = $_SESSION['monto_pago'];
-    $metodo_pago = $_POST['payment_method'];
-
-    // Actualizar estado del pago a 'completado'
-    $sql = "UPDATE Pago SET metodo_pago = ?, estado_pago = ?, fecha_pago = ? WHERE id_pago = ?";
-    $params = [$metodo_pago, 'completado', date('Y-m-d H:i:s'), $id_pago];
+// Obtener butacas (basado en sala_id de la función seleccionada)
+$butacas = [];
+$funcion_id = isset($_GET['funcion_id']) ? (int)$_GET['funcion_id'] : 0;
+$sala_id = isset($_GET['sala_id']) ? (int)$_GET['sala_id'] : 0;
+if ($funcion_id && $sala_id) {
+    $sql = "SELECT id_butaca, fila, numero_butaca FROM Butaca WHERE id_sala = ?";
+    $params = [$sala_id];
     $stmt = sqlsrv_query($conn, $sql, $params);
-
     if ($stmt === false) {
-        echo "<p style='color:red;'>Error al actualizar el pago: " . print_r(sqlsrv_errors(), true) . "</p>";
-        echo "<a href='pelicula.php'>Volver</a>";
-        sqlsrv_close($conn);
-        ob_end_flush();
-        exit();
+        $butacas_error = "Error al cargar las butacas: " . print_r(sqlsrv_errors(), true);
+    } elseif (!sqlsrv_has_rows($stmt)) {
+        $butacas_error = "No hay butacas disponibles para la sala ID: $sala_id. Verifique la tabla Butaca.";
+    } else {
+        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            $butacas[] = $row;
+        }
     }
+    sqlsrv_free_stmt($stmt);
+}
 
-    // Limpiar sesiones
-    unset($_SESSION['selected_movie']);
-    unset($_SESSION['selected_sede']);
-    unset($_SESSION['selected_sala']);
-    unset($_SESSION['sala_name']);
-    unset($_SESSION['selected_butaca']);
-    unset($_SESSION['function_id']);
-    unset($_SESSION['id_pago']);
-    unset($_SESSION['monto_pago']);
-
-    echo "<div class='form-container'>";
-    echo "<h2>¡Compra realizada con éxito!</h2>";
-    echo "<p><strong>ID Pago:</strong> " . $id_pago . "</p>";
-    echo "<p><strong>Monto Pagado:</strong> $" . number_format($monto_pago, 2) . "</p>";
-    echo "<a href='pelicula.php'>Volver</a>";
-    echo "</div>";
-    sqlsrv_close($conn);
-    ob_end_flush();
-    exit();
+// Obtener sede pre-seleccionada
+$sede_seleccionada = '';
+if ($funcion_id) {
+    $sql = "SELECT s.id_sede, se.ciudad_sede 
+            FROM Funcion f 
+            JOIN Sala s ON f.id_sala = s.id_sala 
+            JOIN Sede se ON s.id_sede = se.id_sede 
+            WHERE f.id_funcion = ?";
+    $params = [$funcion_id];
+    $stmt = sqlsrv_query($conn, $sql, $params);
+    if ($stmt !== false && $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+        $sede_seleccionada = $row['id_sede'];
+    }
+    sqlsrv_free_stmt($stmt);
 }
 ?>
 
@@ -246,7 +170,7 @@ if (isset($_POST['simulate_payment'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zynemax+ | Películas</title>
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
     <header>
@@ -259,226 +183,117 @@ if (isset($_POST['simulate_payment'])) {
     </nav>
     <div class="container">
         <div class="welcome-message">
-            <?php if (isset($_GET['payment_success'])): ?>
-                <h2 style='color:green;'>¡Pago realizado con éxito!</h2>
-            <?php else: ?>
-                <h2>Bienvenido, <?php echo $_SESSION['nombre']; ?> (<?php echo $_SESSION['tipo_usuario']; ?>)</h2>
-            <?php endif; ?>
+            <h2>Bienvenido, <?php echo $_SESSION['nombre']; ?> (<?php echo $_SESSION['tipo_usuario']; ?>)</h2>
         </div>
 
-        <!-- Sección de Películas -->
+        <!-- Formulario de Selección -->
         <?php if (!isset($_GET['step']) || $_GET['step'] === 'movies'): ?>
             <div id="movies-form" class="form-container">
-                <h2>Selecciona una Película</h2>
-                <?php
-                $sql = "SELECT DISTINCT p.id_pelicula, p.titulo, p.duracion, p.clasificacion, p.fecha_estreno, p.precio 
-                        FROM Pelicula p 
-                        JOIN Funcion f ON p.id_pelicula = f.id_pelicula";
-                $stmt = sqlsrv_query($conn, $sql);
-                if ($stmt) {
-                    if (sqlsrv_has_rows($stmt)) {
-                        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                            echo "<form method='POST' style='margin: 10px 0;'>";
-                            echo "<input type='hidden' name='movie_id' value='" . $row['id_pelicula'] . "'>";
-                            echo "<p><strong>Título:</strong> " . $row['titulo'] . "</p>";
-                            echo "<p><strong>Duración:</strong> " . $row['duracion'] . " min</p>";
-                            echo "<p><strong>Clasificación:</strong> " . $row['clasificacion'] . "</p>";
-                            echo "<p><strong>Fecha Estreno:</strong> " . $row['fecha_estreno']->format('Y-m-d') . "</p>";
-                            echo "<p><strong>Precio:</strong> $" . number_format($row['precio'], 2) . "</p>";
-                            echo "<button type='submit' name='select_movie'>Seleccionar</button>";
-                            echo "</form>";
+                <h2>Crear una Nueva Reserva</h2>
+                <form method="POST">
+                    <!-- Selección de Función -->
+                    <label for="funcion_id">Función (Película, Sala, Fecha y Hora):</label>
+                    <select name="funcion_id" id="funcion_id" required onchange="updateSedeAndButacas(this.value)">
+                        <option value="">Seleccione una función</option>
+                        <?php
+                        $sql = "SELECT f.id_funcion, p.titulo, s.nombre_sala, f.fecha_hora, f.id_sala
+                                FROM Funcion f
+                                JOIN Pelicula p ON f.id_pelicula = p.id_pelicula
+                                JOIN Sala s ON f.id_sala = s.id_sala
+                                WHERE f.fecha_hora > ?";
+                        $params = [date('Y-m-d H:i:s')];
+                        $stmt = sqlsrv_query($conn, $sql, $params);
+                        if ($stmt === false) {
+                            echo "<p style='color:red;'>Error al cargar las funciones: " . print_r(sqlsrv_errors(), true) . "</p>";
+                        } elseif (!sqlsrv_has_rows($stmt)) {
+                            echo "<p style='color:red;'>No hay funciones disponibles en el futuro.</p>";
+                        } else {
+                            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                                $fecha_hora = $row['fecha_hora']->format('Y-m-d H:i:s');
+                                echo "<option value='" . $row['id_funcion'] . "' data-sala-id='" . $row['id_sala'] . "'>" . 
+                                     $row['titulo'] . " - " . $row['nombre_sala'] . " - " . $fecha_hora . "</option>";
+                            }
                         }
-                    } else {
-                        echo "<p>No hay películas con funciones disponibles.</p>";
-                    }
-                    sqlsrv_free_stmt($stmt);
-                } else {
-                    echo "<p>Error al cargar las películas: " . print_r(sqlsrv_errors(), true) . "</p>";
-                }
-                ?>
+                        sqlsrv_free_stmt($stmt);
+                        ?>
+                    </select><br><br>
+
+                    <!-- Selección de Sede -->
+                    <label for="sede_id">Sede:</label>
+                    <select name="sede_id" id="sede_id" required>
+                        <option value="">Seleccione una sede</option>
+                        <?php
+                        if (isset($sedes_error)) {
+                            echo "<option value='' disabled>$sedes_error</option>";
+                        } else {
+                            foreach ($sedes as $id => $ciudad) {
+                                $selected = ($id == $sede_seleccionada) ? 'selected' : '';
+                                echo "<option value='$id' $selected>$ciudad</option>";
+                            }
+                        }
+                        ?>
+                    </select><br><br>
+
+                    <!-- Selección de Butaca -->
+                    <label for="butaca_id">Butaca:</label>
+                    <select name="butaca_id" id="butaca_id" required>
+                        <option value="">Seleccione una butaca</option>
+                        <?php
+                        if (isset($butacas_error)) {
+                            echo "<option value='' disabled>$butacas_error</option>";
+                        } else {
+                            foreach ($butacas as $butaca) {
+                                echo "<option value='" . $butaca['id_butaca'] . "'>Fila " . $butaca['fila'] . ", Número " . $butaca['numero_butaca'] . "</option>";
+                            }
+                        }
+                        ?>
+                    </select><br><br>
+
+                    <button type="submit" name="confirm_reservation">Confirmar Reserva</button>
+                </form>
             </div>
         <?php endif; ?>
 
-        <!-- Sección de Sedes -->
-        <?php if (isset($_GET['step']) && $_GET['step'] === 'sede' && isset($_SESSION['selected_movie'])): ?>
+        <!-- Sección de Comprobante -->
+        <?php if (isset($_GET['step']) && $_GET['step'] === 'comprobante' && isset($_SESSION['reservation_id']) && isset($_SESSION['reserva_funcion_id'])): ?>
             <div class="form-container">
-                <h2>Selecciona una Sede</h2>
+                <h2>Comprobante de Reserva</h2>
                 <?php
-                $sql = "SELECT s.id_sede, s.ciudad_sede, s.direccion_sede 
-                        FROM Sede s 
-                        JOIN Sala sa ON s.id_sede = sa.id_sede 
-                        JOIN Funcion f ON sa.id_sala = f.id_sala 
-                        WHERE f.id_pelicula = ?";
-                $params = [$_SESSION['selected_movie']];
+                $sql = "SELECT r.id_reserva, r.fecha_reserva, rf.id_reserva_funcion, f.id_funcion, p.titulo, s.nombre_sala, se.ciudad_sede, b.fila, b.numero_butaca, f.fecha_hora AS fecha_hora_funcion
+                        FROM Reserva r
+                        JOIN Reserva_funcion rf ON r.id_reserva = rf.id_reserva
+                        JOIN Funcion f ON rf.id_funcion = f.id_funcion
+                        JOIN Pelicula p ON f.id_pelicula = p.id_pelicula
+                        JOIN Sala s ON f.id_sala = s.id_sala
+                        JOIN Sede se ON s.id_sede = se.id_sede
+                        JOIN Reserva_butaca rb ON rf.id_reserva_funcion = rb.id_reserva_funcion
+                        JOIN Butaca b ON rb.id_butaca = b.id_butaca
+                        WHERE r.id_reserva = ? AND rf.id_reserva_funcion = ?";
+                $params = [$_SESSION['reservation_id'], $_SESSION['reserva_funcion_id']];
                 $stmt = sqlsrv_query($conn, $sql, $params);
-                if ($stmt) {
-                    if (sqlsrv_has_rows($stmt)) {
-                        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                            echo "<form method='POST' style='margin: 10px 0;'>";
-                            echo "<input type='hidden' name='sede_id' value='" . $row['id_sede'] . "'>";
-                            echo "<p><strong>Ciudad:</strong> " . $row['ciudad_sede'] . "</p>";
-                            echo "<p><strong>Dirección:</strong> " . $row['direccion_sede'] . "</p>";
-                            echo "<button type='submit' name='select_sede'>Seleccionar</button>";
-                            echo "</form>";
-                        }
-                    } else {
-                        echo "<p>No hay sedes disponibles para esta película.</p>";
-                        echo "<a href='pelicula.php'>Volver</a>";
-                    }
-                    sqlsrv_free_stmt($stmt);
-                } else {
-                    echo "<p>Error al cargar las sedes: " . print_r(sqlsrv_errors(), true) . "</p>";
-                }
-                ?>
-            </div>
-        <?php endif; ?>
-
-        <!-- Sección de Salas -->
-        <?php if (isset($_GET['step']) && $_GET['step'] === 'sala' && isset($_SESSION['selected_sede']) && isset($_SESSION['selected_movie'])): ?>
-            <div class="form-container">
-                <h2>Selecciona una Sala</h2>
-                <?php
-                $sql = "SELECT s.id_sala, s.nombre_sala, f.id_funcion, f.fecha_hora 
-                        FROM Sala s 
-                        JOIN Funcion f ON s.id_sala = f.id_sala 
-                        WHERE s.id_sede = ? AND f.id_pelicula = ?";
-                $params = [$_SESSION['selected_sede'], $_SESSION['selected_movie']];
-                $stmt = sqlsrv_query($conn, $sql, $params);
-                if ($stmt) {
-                    if (sqlsrv_has_rows($stmt)) {
-                        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                            echo "<form method='POST' style='margin: 10px 0;'>";
-                            echo "<input type='hidden' name='sala_id' value='" . $row['id_sala'] . "'>";
-                            echo "<input type='hidden' name='funcion_id' value='" . $row['id_funcion'] . "'>";
-                            echo "<input type='hidden' name='sala_name' value='" . $row['nombre_sala'] . "'>";
-                            echo "<p><strong>Sala:</strong> " . $row['nombre_sala'] . "</p>";
-                            echo "<p><strong>Fecha y Hora:</strong> " . $row['fecha_hora']->format('Y-m-d H:i:s') . "</p>";
-                            echo "<button type='submit' name='select_sala'>Seleccionar</button>";
-                            echo "</form>";
-                        }
-                    } else {
-                        echo "<p>No hay salas disponibles para esta sede y película.</p>";
-                        echo "<a href='pelicula.php?step=sede'>Volver</a>";
-                    }
-                    sqlsrv_free_stmt($stmt);
-                } else {
-                    echo "<p>Error al cargar las salas: " . print_r(sqlsrv_errors(), true) . "</p>";
-                }
-                ?>
-            </div>
-        <?php endif; ?>
-
-        <!-- Sección de Butacas -->
-        <?php if (isset($_GET['step']) && $_GET['step'] === 'butaca' && isset($_SESSION['selected_sala'])): ?>
-            <div class="form-container">
-                <h2>Selecciona una Butaca</h2>
-                <p>Esa película se transmite en la sala <strong><?php echo $_SESSION['sala_name']; ?></strong>.</p>
-                <h3>Asientos Disponibles:</h3>
-                <?php
-                $sql = "SELECT id_butaca, fila, numero_butaca 
-                        FROM Butaca 
-                        WHERE id_sala = ? AND id_butaca NOT IN (SELECT id_butaca FROM Reserva_butaca)";
-                $params = [$_SESSION['selected_sala']];
-                $stmt = sqlsrv_query($conn, $sql, $params);
-                if ($stmt === false) {
-                    echo "<p>Error al cargar las butacas: " . print_r(sqlsrv_errors(), true) . "</p>";
-                } else {
-                    if (sqlsrv_has_rows($stmt)) {
-                        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                            echo "<form method='POST' style='margin: 10px 0;'>";
-                            echo "<input type='hidden' name='butaca_id' value='" . $row['id_butaca'] . "'>";
-                            echo "<p><strong>Fila:</strong> " . $row['fila'] . " <strong>Número:</strong> " . $row['numero_butaca'] . "</p>";
-                            echo "<button type='submit' name='select_butaca'>Seleccionar</button>";
-                            echo "</form>";
-                        }
-                    } else {
-                        echo "<p style='color:red;'>No hay asientos disponibles en esta sala.</p>";
-                        echo "<a href='pelicula.php?step=sala'>Volver</a>";
-                    }
-                    sqlsrv_free_stmt($stmt);
-                }
-                ?>
-            </div>
-        <?php endif; ?>
-
-        <!-- Resumen de la compra -->
-        <?php if (isset($_GET['step']) && $_GET['step'] === 'summary' && isset($_SESSION['selected_butaca'])): ?>
-            <div class="form-container">
-                <h2>Resumen de tu Compra</h2>
-                <?php
-                $sql = "SELECT 
-                    u.nombre AS usuario,
-                    p.titulo,
-                    s.ciudad_sede,
-                    sa.nombre_sala,
-                    b.fila,
-                    b.numero_butaca,
-                    f.fecha_hora,
-                    p.precio
-                FROM Usuario u
-                JOIN Reserva r ON u.dni = r.dni_usuario
-                JOIN Reserva_funcion rf ON r.id_reserva = rf.id_reserva
-                JOIN Funcion f ON rf.id_funcion = f.id_funcion
-                JOIN Pelicula p ON f.id_pelicula = p.id_pelicula
-                JOIN Sala sa ON f.id_sala = sa.id_sala
-                JOIN Sede s ON sa.id_sede = s.id_sede
-                JOIN Reserva_butaca rb ON rf.id_reserva_funcion = rb.id_reserva_funcion
-                JOIN Butaca b ON rb.id_butaca = b.id_butaca
-                WHERE u.dni = ? AND p.id_pelicula = ? AND s.id_sede = ? AND sa.id_sala = ? AND b.id_butaca = ? AND f.id_funcion = (
-                    SELECT id_funcion FROM Reserva_funcion WHERE id_reserva = r.id_reserva
-                )";
-                $params = [
-                    $_SESSION['dni'],
-                    $_SESSION['selected_movie'],
-                    $_SESSION['selected_sede'],
-                    $_SESSION['selected_sala'],
-                    $_SESSION['selected_butaca']
-                ];
-                $stmt = sqlsrv_query($conn, $sql, $params);
-
                 if ($stmt && $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                    echo "<p><strong>Usuario:</strong> " . $row['usuario'] . "</p>";
+                    echo "<p><strong>Usuario:</strong> " . $_SESSION['nombre'] . "</p>";
+                    echo "<p><strong>Reserva ID:</strong> " . $row['id_reserva'] . "</p>";
+                    echo "<p><strong>Fecha de Reserva:</strong> " . $row['fecha_reserva']->format('Y-m-d H:i:s') . "</p>";
+                    echo "<p><strong>Función ID:</strong> " . $row['id_funcion'] . "</p>";
                     echo "<p><strong>Película:</strong> " . $row['titulo'] . "</p>";
                     echo "<p><strong>Sede:</strong> " . $row['ciudad_sede'] . "</p>";
                     echo "<p><strong>Sala:</strong> " . $row['nombre_sala'] . "</p>";
                     echo "<p><strong>Butaca:</strong> Fila " . $row['fila'] . ", Número " . $row['numero_butaca'] . "</p>";
-                    echo "<p><strong>Fecha y Hora:</strong> " . $row['fecha_hora']->format('Y-m-d H:i:s') . "</p>";
-                    echo "<p><strong>Precio:</strong> $" . number_format($row['precio'], 2) . "</p>";
+                    echo "<p><strong>Fecha y Hora de la Función:</strong> " . $row['fecha_hora_funcion']->format('Y-m-d H:i:s') . "</p>";
                 } else {
-                    echo "<p style='color:red;'>Error al cargar el resumen o no se encontraron datos: " . print_r(sqlsrv_errors(), true) . "</p>";
-                    echo "<a href='pelicula.php'>Volver</a>";
-                    sqlsrv_close($conn);
-                    ob_end_flush();
-                    exit();
+                    echo "<p>Error al cargar el resumen: " . print_r(sqlsrv_errors(), true) . " o no se encontró la reserva en Reserva_funcion.</p>";
                 }
                 sqlsrv_free_stmt($stmt);
                 ?>
-                <form method="POST">
-                    <button type="submit" name="confirm_purchase">Confirmar Compra</button>
-                </form>
-            </div>
-        <?php endif; ?>
-
-        <!-- Simulación de pago -->
-        <?php if (isset($_GET['step']) && $_GET['step'] === 'payment' && isset($_SESSION['id_pago'])): ?>
-            <div class="form-container">
-                <h2>Simular Pago</h2>
-                <p>Por favor, selecciona un método de pago para simular la transacción.</p>
-                <form method="POST">
-                    <select name="payment_method" required>
-                        <option value="tarjeta">Tarjeta</option>
-                        <option value="efectivo">Efectivo</option>
-                        <option value="transferencia">Transferencia</option>
-                    </select>
-                    <button type="submit" name="simulate_payment">Pagar</button>
-                </form>
+                <a href="pelicula.php">Volver</a>
             </div>
         <?php endif; ?>
     </div>
     <footer>
         <p>© 2025 Zynemax+ | Todos los derechos reservados</p>
     </footer>
-    <script src="/scrip.js" defer></script>
+    <script src="/script.js" defer></script>
     <?php sqlsrv_close($conn); ?>
 </body>
 </html>
