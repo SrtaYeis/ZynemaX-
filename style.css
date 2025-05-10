@@ -108,7 +108,98 @@ footer {
     width: 100%;
 }
 
-/* Nuevos estilos para las listas en Cartelera y Sedes */
+/* Estilos para la sección de Cartelera */
+.sede-selector {
+    margin-bottom: 1rem;
+}
+.sede-selector label {
+    color: #ffd700;
+    margin-right: 0.5rem;
+}
+.sede-selector select {
+    background: #333;
+    color: #fff;
+    border: 1px solid #b22222;
+    padding: 0.5rem;
+    border-radius: 5px;
+}
+
+.date-carousel {
+    display: flex;
+    overflow-x: auto;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid #b22222;
+}
+.date-tab {
+    padding: 0.5rem 1rem;
+    color: #fff;
+    text-decoration: none;
+    border-bottom: 3px solid transparent;
+    margin-right: 0.5rem;
+    white-space: nowrap;
+}
+.date-tab:hover {
+    color: #ffd700;
+}
+.date-tab.active {
+    color: #ffd700;
+    border-bottom: 3px solid #ffd700;
+}
+
+.movie-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.movie-card {
+    display: flex;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 5px;
+    padding: 1rem;
+    border-left: 4px solid #ffd700;
+}
+.movie-poster img {
+    width: 150px;
+    height: 220px;
+    object-fit: cover;
+    border-radius: 5px;
+    margin-right: 1rem;
+}
+.movie-details {
+    flex: 1;
+}
+.movie-details h3 {
+    color: #ffd700;
+    margin: 0 0 0.5rem 0;
+}
+.movie-info {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+.clasificacion, .duracion {
+    background: #b22222;
+    color: #fff;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.9rem;
+}
+.movie-formats {
+    margin-bottom: 0.5rem;
+}
+.formato {
+    background: #333;
+    color: #ffd700;
+    padding: 0.2rem 0.5rem;
+    margin-right: 0.5rem;
+    border-radius: 3px;
+    font-size: 0.9rem;
+}
+.movie-schedule {
+    color: #fff;
+}
+
+/* Estilos para la sección de Sedes */
 .section ul {
     list-style-type: none;
     padding: 0;
