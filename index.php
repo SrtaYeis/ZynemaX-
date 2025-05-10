@@ -6,7 +6,7 @@ session_start();
 // Conexión a la base de datos
 $serverName = "database-zynemaxplus-server.database.windows.net";
 $connectionInfo = [
-    "Database" => "ZynemaxDB", // Corregido de "database-zynemaxplus-server" a "ZynemaxDB"
+    "Database" => "database-zynemaxplus-server", // Corregido de "database-zynemaxplus-server" a "ZynemaxDB"
     "UID" => "zynemaxplus",
     "PWD" => "grupo2_1al10",
     "Encrypt" => true,
