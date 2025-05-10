@@ -6,7 +6,7 @@ session_start();
 // Conexión a la base de datos
 $serverName = "database-zynemaxplus-server.database.windows.net";
 $connectionInfo = [
-    "Database" => "database-zynemaxplus-server",
+    "Database" => "ZynemaxDB",
     "UID" => "zynemaxplus",
     "PWD" => "grupo2_1al10",
     "Encrypt" => true,
@@ -124,7 +124,7 @@ if (isset($_POST['confirm_reservation'])) {
 
 // Simular compra
 if (isset($_POST['process_payment'])) {
-    // Validación 5: Verificar que la reserva exista
+    // Validación 5: Verificación simulada de la reserva
     if (!isset($_SESSION['reservation_id'])) {
         echo "<p style='color:red;'>Error: No se encontró una reserva para procesar el pago.</p>";
         echo "<a href='pelicula.php'>Volver</a>";
@@ -133,20 +133,13 @@ if (isset($_POST['process_payment'])) {
         exit();
     }
 
-    $id_reserva = $_SESSION['reservation_id'];
+    // Simulación de pago
     $metodo_pago = $_POST['payment_method'];
-    $monto_pago = 10.00; // Monto fijo para simulación
+    $monto_pago = 10.00; // Monto fijo simulado
     $fecha_pago = date('Y-m-d H:i:s');
-    $estado_pago = 'completado';
+    $estado_pago = 'completado'; // Simulación de éxito
 
-    $sql = "INSERT INTO Pago (id_reserva, metodo_pago, monto_pago, fecha_pago, estado_pago) VALUES (?, ?, ?, ?, ?)";
-    $params = [$id_reserva, $metodo_pago, $monto_pago, $fecha_pago, $estado_pago];
-    $stmt = sqlsrv_query($conn, $sql, $params);
-
-    if ($stmt === false) {
-        die("Error al registrar pago: " . print_r(sqlsrv_errors(), true));
-    }
-
+    // No insertamos en la base de datos, solo simulamos el proceso
     // Limpiar sesiones
     unset($_SESSION['selected_movie']);
     unset($_SESSION['selected_sala']);
@@ -156,7 +149,6 @@ if (isset($_POST['process_payment'])) {
     unset($_SESSION['reservation_id']);
     header("Location: pelicula.php?payment_success=1");
     exit();
-    sqlsrv_free_stmt($stmt);
 }
 ?>
 
@@ -166,7 +158,7 @@ if (isset($_POST['process_payment'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zynemax+ | Películas</title>
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
     <header>
@@ -307,7 +299,7 @@ if (isset($_POST['process_payment'])) {
     <footer>
         <p>© 2025 Zynemax+ | Todos los derechos reservados</p>
     </footer>
-    <script src="/scrip.js" defer></script>
+    <script src="/script.js" defer></script>
     <?php sqlsrv_close($conn); ?>
 </body>
 </html>
