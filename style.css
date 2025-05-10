@@ -108,42 +108,21 @@ footer {
     width: 100%;
 }
 
-/* Estilos para la cartelera */
-.movie-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-top: 1rem;
+/* Nuevos estilos para las listas en Cartelera y Sedes */
+.section ul {
+    list-style-type: none;
+    padding: 0;
 }
-.movie-card {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    overflow: hidden;
-    border: 1px solid #b22222;
-    transition: transform 0.2s;
-}
-.movie-card:hover {
-    transform: scale(1.05);
-}
-.movie-image {
-    width: 100%;
-    height: 300px;
-    background: #333;
-    overflow: hidden;
-}
-.movie-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-.movie-info {
+.section li {
     padding: 1rem;
+    margin-bottom: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 5px;
+    border-left: 4px solid #ffd700;
 }
-.movie-info h3 {
+.section li:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+.section li strong {
     color: #ffd700;
-    margin: 0 0 0.5rem;
-}
-.movie-info p {
-    margin: 0.3rem 0;
-    color: #fff;
 }
