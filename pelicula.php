@@ -198,7 +198,7 @@ if (isset($_POST['process_payment'])) {
             <div id="movies-form" class="form-container">
                 <h2>Selecciona una Película</h2>
                 <?php
-                $sql = "SELECT DISTINCT p.* 
+                $sql = "SELECT DISTINCT p.id_pelicula, p.titulo, p.duracion, p.clasificacion, p.fecha_estreno 
                         FROM Pelicula p 
                         JOIN Funcion f ON p.id_pelicula = f.id_pelicula";
                 $stmt = sqlsrv_query($conn, $sql);
@@ -208,7 +208,6 @@ if (isset($_POST['process_payment'])) {
                             echo "<form method='POST' style='margin: 10px 0;'>";
                             echo "<input type='hidden' name='movie_id' value='" . $row['id_pelicula'] . "'>";
                             echo "<p><strong>Título:</strong> " . $row['titulo'] . "</p>";
-                            echo "<p><strong>Sinopsis:</strong> " . $row['sinopsis'] . "</p>";
                             echo "<p><strong>Duración:</strong> " . $row['duracion'] . " min</p>";
                             echo "<p><strong>Clasificación:</strong> " . $row['clasificacion'] . "</p>";
                             echo "<p><strong>Fecha Estreno:</strong> " . $row['fecha_estreno']->format('Y-m-d') . "</p>";
