@@ -119,6 +119,7 @@ if (isset($_POST['confirm_reservation'])) {
     $_SESSION['reservation_id'] = $id_reserva;
     header("Location: pelicula.php?step=comprobante");
     exit();
+    sqlsrv_free_stmt($stmt);
 }
 
 // Simular compra
@@ -155,6 +156,7 @@ if (isset($_POST['process_payment'])) {
     unset($_SESSION['reservation_id']);
     header("Location: pelicula.php?payment_success=1");
     exit();
+    sqlsrv_free_stmt($stmt);
 }
 ?>
 
@@ -266,28 +268,13 @@ if (isset($_POST['process_payment'])) {
         <!-- Sección de Comprobante -->
         <?php if (isset($_GET['step']) && $_GET['step'] === 'comprobante' && isset($_SESSION['reservation_id'])): ?>
             <div class="form-container">
-                <h2>Comprobante de Reserva</h2>
-                <?php
-                $sql = "SELECT p.titulo, s.nombre_sala, b.fila, b.numero_butaca, f.fecha_hora_funcion 
-                        FROM Pelicula p 
-                        JOIN Funcion f ON p.id_pelicula = f.id_pelicula 
-                        JOIN Sala s ON f.id_sala = s.id_sala 
-                        JOIN Butaca b ON b.id_butaca = ? 
-                        WHERE f.id_funcion = ?";
-                $params = [$_SESSION['selected_butaca'], $_SESSION['function_id']];
-                $stmt = sqlsrv_query($conn, $sql, $params);
-                if ($stmt && $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                    echo "<p><strong>Usuario:</strong> " . $_SESSION['nombre'] . "</p>";
-                    echo "<p><strong>Película:</strong> " . $row['titulo'] . "</p>";
-                    echo "<p><strong>Sala:</strong> " . $row['nombre_sala'] . "</p>";
-                    echo "<p><strong>Butaca:</strong> Fila " . $row['fila'] . ", Número " . $row['numero_butaca'] . "</p>";
-                    echo "<p><strong>Fecha y Hora:</strong> " . $row['fecha_hora_funcion']->format('Y-m-d H:i:s') . "</p>";
-                    echo "<p><strong>Reserva ID:</strong> " . $_SESSION['reservation_id'] . "</p>";
-                } else {
-                    echo "<p>Error al cargar el comprobante: " . print_r(sqlsrv_errors(), true) . "</p>";
-                }
-                sqlsrv_free_stmt($stmt);
-                ?>
+                <h2>Comprobante de Reserva (Simulado)</h2>
+                <p><strong>Usuario:</strong> <?php echo $_SESSION['nombre']; ?></p>
+                <p><strong>Película:</strong> Avengers: El Fin (Simulado)</p>
+                <p><strong>Sala:</strong> <?php echo $_SESSION['sala_name']; ?></p>
+                <p><strong>Butaca:</strong> Fila A, Número 1 (Simulado)</p>
+                <p><strong>Fecha y Hora:</strong> <?php echo date('Y-m-d H:i:s'); ?> (Simulado)</p>
+                <p><strong>Reserva ID:</strong> <?php echo $_SESSION['reservation_id']; ?></p>
                 <h3>Proceder al Pago</h3>
                 <form method="POST">
                     <select name="payment_method" required>
