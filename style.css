@@ -1,101 +1,126 @@
-body {
-    font-family: 'Arial', sans-serif;
-    margin: 0;
-    padding: 0;
-    background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), url('https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
-    background-size: cover;
-    background-attachment: fixed;
-    color: #fff;
+{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
+    line-height: 1.6;
+}
+
 header {
-    background-color: #1a1a1a;
+    background-color: #1a3c34;
+    color: white;
     padding: 1rem;
     text-align: center;
-    border-bottom: 3px solid #b22222;
 }
+
 header h1 {
     margin: 0;
-    font-size: 2.5rem;
-    color: #ffd700;
 }
+
 nav {
-    background-color: #333;
+    background-color: #2e5d55;
     padding: 1rem;
     text-align: center;
 }
+
 nav a {
-    color: #ffd700;
+    color: white;
     text-decoration: none;
-    margin: 0 1.5rem;
+    margin: 0 1rem;
     font-weight: bold;
-    font-size: 1.1rem;
 }
+
 nav a:hover {
-    color: #b22222;
+    color: #ddd;
 }
+
 .container {
     max-width: 1200px;
     margin: 2rem auto;
     padding: 0 1rem;
 }
-.auth-section {
+
+.welcome-message {
     text-align: center;
     margin-bottom: 2rem;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
 }
+
+.welcome-message h2 {
+    color: #1a3c34;
+}
+
 .form-container {
-    background: rgba(255, 255, 255, 0.9);
-    color: #333;
+    background-color: white;
     padding: 2rem;
-    border-radius: 10px;
-    max-width: 600px;
-    margin: 0 auto;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-    margin-bottom: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
 }
+
 .form-container h2 {
-    color: #b22222;
     margin-bottom: 1rem;
+    color: #1a3c34;
 }
+
 .form-container p {
     margin: 0.5rem 0;
-    font-size: 1rem;
 }
-input, select, textarea {
+
+.form-container form {
+    margin: 1rem 0;
+}
+
+.form-container input[type="text"],
+.form-container input[type="password"],
+.form-container select {
     width: 100%;
     padding: 0.5rem;
     margin: 0.5rem 0;
-    border: 1px solid #b22222;
-    border-radius: 5px;
-    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 4px;
 }
-button {
-    background-color: #b22222;
-    color: #fff;
-    padding: 0.7rem 1.5rem;
+
+.form-container button {
+    background-color: #1a3c34;
+    color: white;
+    padding: 0.5rem 1rem;
     border: none;
-    border-radius: 5px;
+    border-radius: 4px;
     cursor: pointer;
-    margin-top: 0.5rem;
 }
-button:hover {
-    background-color: #8b0000;
+
+.form-container button:hover {
+    background-color: #2e5d55;
 }
-.welcome-message {
-    text-align: center;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 2rem;
-    border-radius: 10px;
-    margin-bottom: 2rem;
-}
-.welcome-message h2 {
-    color: #ffd700;
-}
+
 footer {
-    background-color: #1a1a1a;
-    padding: 1rem;
+    background-color: #1a3c34;
+    color: white;
     text-align: center;
-    border-top: 3px solid #b22222;
+    padding: 1rem;
     position: fixed;
     bottom: 0;
     width: 100%;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 0 0.5rem;
+    }
+
+    nav a {
+        display: block;
+        margin: 0.5rem 0;
+    }
+
+    .form-container {
+        padding: 1rem;
+    }
 }
