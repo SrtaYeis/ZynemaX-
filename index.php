@@ -6,7 +6,7 @@ session_start();
 // Conexión a la base de datos
 $serverName = "database-zynemaxplus-server.database.windows.net";
 $connectionInfo = [
-    "Database" => "database-zynemaxplus-server",
+    "Database" => "ZynemaxDB", // Corregido de "database-zynemaxplus-server" a "ZynemaxDB"
     "UID" => "zynemaxplus",
     "PWD" => "grupo2_1al10",
     "Encrypt" => true,
@@ -18,7 +18,6 @@ $conn = sqlsrv_connect($serverName, $connectionInfo);
 if ($conn === false) {
     die("<pre>Conexión fallida: " . print_r(sqlsrv_errors(), true) . "</pre>");
 }
-
 
 // Procesar registro (solo cliente)
 if (isset($_POST['register'])) {
