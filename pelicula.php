@@ -313,7 +313,7 @@ if (isset($_POST['process_payment'])) {
                     echo "<p><strong>Butaca:</strong> Fila " . $row['fila'] . ", Número " . $row['numero_butaca'] . "</p>";
                     echo "<p><strong>Fecha y Hora de la Función:</strong> " . $row['fecha_hora_funcion']->format('Y-m-d H:i:s') . "</p>";
                 } else {
-                    echo "<p>Error al cargar el resumen: " . print_r(sqlsrv_errors(), true) . "</p>";
+                    echo "<p>Error al cargar el resumen: " . print_r(sqlsrv_errors(), true) . " o no se encontró la reserva en Reserva_funcion.</p>";
                 }
                 sqlsrv_free_stmt($stmt);
                 ?>
