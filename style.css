@@ -1,164 +1,101 @@
-/* Estilos generales */
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Arial', sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f4f4f4;
-    color: #333;
-    line-height: 1.6;
+    background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), url('https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+    background-size: cover;
+    background-attachment: fixed;
+    color: #fff;
 }
-
-/* Encabezado */
 header {
     background-color: #1a1a1a;
-    color: white;
+    padding: 1rem;
     text-align: center;
-    padding: 20px 0;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    border-bottom: 3px solid #b22222;
 }
-
 header h1 {
     margin: 0;
-    font-size: 2.5em;
+    font-size: 2.5rem;
+    color: #ffd700;
 }
-
-/* Navegación */
 nav {
     background-color: #333;
-    padding: 10px 0;
+    padding: 1rem;
     text-align: center;
 }
-
 nav a {
-    color: white;
+    color: #ffd700;
     text-decoration: none;
-    margin: 0 20px;
-    font-size: 1.1em;
-    transition: color 0.3s ease;
+    margin: 0 1.5rem;
+    font-weight: bold;
+    font-size: 1.1rem;
 }
-
 nav a:hover {
-    color: #ffcc00;
+    color: #b22222;
 }
-
-/* Contenedor principal */
 .container {
     max-width: 1200px;
-    margin: 20px auto;
-    padding: 0 20px;
+    margin: 2rem auto;
+    padding: 0 1rem;
 }
-
-/* Mensaje de bienvenida */
-.welcome-message {
+.auth-section {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 2rem;
 }
-
-.welcome-message h2 {
-    font-size: 1.8em;
-    margin: 0;
-}
-
-/* Contenedor de formularios */
 .form-container {
-    background-color: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+    padding: 2rem;
+    border-radius: 10px;
+    max-width: 600px;
+    margin: 0 auto;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    margin-bottom: 1rem;
 }
-
 .form-container h2 {
-    font-size: 1.5em;
-    margin-top: 0;
-    color: #1a1a1a;
+    color: #b22222;
+    margin-bottom: 1rem;
 }
-
 .form-container p {
-    margin: 10px 0;
+    margin: 0.5rem 0;
+    font-size: 1rem;
 }
-
-/* Formularios */
-form {
-    margin: 10px 0;
+input, select, textarea {
+    width: 100%;
+    padding: 0.5rem;
+    margin: 0.5rem 0;
+    border: 1px solid #b22222;
+    border-radius: 5px;
+    box-sizing: border-box;
 }
-
-form button {
-    background-color: #ffcc00;
-    color: #1a1a1a;
+button {
+    background-color: #b22222;
+    color: #fff;
+    padding: 0.7rem 1.5rem;
     border: none;
-    padding: 10px 20px;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 1em;
-    transition: background-color 0.3s ease;
+    margin-top: 0.5rem;
 }
-
-form button:hover {
-    background-color: #e6b800;
+button:hover {
+    background-color: #8b0000;
 }
-
-/* Estilo para select (método de pago) */
-select {
-    padding: 8px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    margin-right: 10px;
-    font-size: 1em;
-}
-
-/* Mensajes de éxito y error */
-p[style*="color:green"] {
-    background-color: #e7f3e7;
-    color: #2e7d32;
-    padding: 10px;
-    border-radius: 5px;
+.welcome-message {
     text-align: center;
-    font-weight: bold;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
 }
-
-p[style*="color:red"] {
-    background-color: #fce4e4;
-    color: #d32f2f;
-    padding: 10px;
-    border-radius: 5px;
-    text-align: center;
-    font-weight: bold;
+.welcome-message h2 {
+    color: #ffd700;
 }
-
-/* Enlaces */
-a {
-    color: #1a1a1a;
-    text-decoration: none;
-    font-weight: bold;
-}
-
-a:hover {
-    color: #ffcc00;
-    text-decoration: underline;
-}
-
-/* Pie de página */
 footer {
     background-color: #1a1a1a;
-    color: white;
+    padding: 1rem;
     text-align: center;
-    padding: 10px 0;
+    border-top: 3px solid #b22222;
     position: fixed;
     bottom: 0;
     width: 100%;
-}
-
-footer p {
-    margin: 0;
-    font-size: 0.9em;
-}
-
-/* Depuración (para mensajes de debug) */
-p[style*="color:blue"] {
-    background-color: #e3f2fd;
-    color: #1565c0;
-    padding: 5px;
-    border-radius: 5px;
-    font-size: 0.9em;
 }
