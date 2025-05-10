@@ -33,11 +33,22 @@ if (isset($_POST['register'])) {
     $tipo_usuario = 'cliente';
 
     if ($dni && $nombre && $email && $contrasena) {
+        // Check if DNI already exists
+        $sql_check = "SELECT COUNT(*) AS count FROM Usuario WHERE dni = ?";
+        $params_check = [$dni];
+        $stmt_check = sqlsrv_query($conn, $sql_check, $params_check);
+        $row_check = sqlsrv_fetch_array($stmt_check, SQLSRV_FETCH_ASSOC);
+        if ($row_check['count'] > 0) {
+            header("Location: index.php?error=11");
+            exit();
+        }
+
         $sql = "INSERT INTO Usuario (dni, nombre, email, contrasena, tipo_usuario) VALUES (?, ?, ?, ?, ?)";
         $params = [$dni, $nombre, $email, $contrasena, $tipo_usuario];
         $stmt = sqlsrv_query($conn, $sql, $params);
 
         if ($stmt === false) {
+            echo "<pre>SQL Error: " . print_r(sqlsrv_errors(), true) . "</pre>";
             header("Location: index.php?error=1");
             exit();
         } else {
@@ -280,7 +291,7 @@ sqlsrv_close($conn);
             </div>
             <div id="register-form" class="form-container" style="display: none;">
                 <h2>Registrarse</h2>
-                <form method="POST">
+                <form method="POST" id="register-form-submit">
                     <input type="number" name="dni" placeholder="DNI" required>
                     <input type="text" name="nombre" placeholder="Nombre" required maxlength="50">
                     <input type="email" name="email" placeholder="Correo" required maxlength="50">
