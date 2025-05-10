@@ -6,7 +6,7 @@ session_start();
 // Conexión a la base de datos
 $serverName = "database-zynemaxplus-server.database.windows.net";
 $connectionInfo = [
-    "Database" => "ZynemaxDB",
+    "Database" => "database-zynemaxplus-server",
     "UID" => "zynemaxplus",
     "PWD" => "grupo2_1al10",
     "Encrypt" => true,
@@ -170,7 +170,7 @@ if ($funcion_id) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zynemax+ | Películas</title>
-    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
     <header>
@@ -293,7 +293,7 @@ if ($funcion_id) {
     <footer>
         <p>© 2025 Zynemax+ | Todos los derechos reservados</p>
     </footer>
-    <script src="/script.js" defer></script>
+    <script src="/scrip.js" defer></script>
     <?php sqlsrv_close($conn); ?>
 </body>
 </html>
