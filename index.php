@@ -6,7 +6,7 @@ session_start();
 // Conexión a la base de datos
 $serverName = "database-zynemaxplus-server.database.windows.net";
 $connectionInfo = [
-    "Database" => "database-zynemaxplus-server", // Corregido de "database-zynemaxplus-server" a "ZynemaxDB"
+    "Database" => "database-zynemaxplus-server",
     "UID" => "zynemaxplus",
     "PWD" => "grupo2_1al10",
     "Encrypt" => true,
@@ -18,6 +18,41 @@ $conn = sqlsrv_connect($serverName, $connectionInfo);
 if ($conn === false) {
     die("<pre>Conexión fallida: " . print_r(sqlsrv_errors(), true) . "</pre>");
 }
+
+// Consulta para la Cartelera (Películas, Funciones y Salas)
+$sql_cartelera = "
+    SELECT p.titulo, f.fecha_hora, s.nombre_sala, se.ciudad_sede
+    FROM Funcion f
+    INNER JOIN Pelicula p ON f.id_pelicula = p.id_pelicula
+    INNER JOIN Sala s ON f.id_sala = s.id_sala
+    INNER JOIN Sede se ON s.id_sede = se.id_sede
+    WHERE f.fecha_hora >= GETDATE()
+    ORDER BY f.fecha_hora ASC";
+$stmt_cartelera = sqlsrv_query($conn, $sql_cartelera);
+
+if ($stmt_cartelera === false) {
+    die("<pre>Error en la consulta de cartelera: " . print_r(sqlsrv_errors(), true) . "</pre>");
+}
+
+$cartelera = [];
+while ($row = sqlsrv_fetch_array($stmt_cartelera, SQLSRV_FETCH_ASSOC)) {
+    $cartelera[] = $row;
+}
+sqlsrv_free_stmt($stmt_cartelera);
+
+// Consulta para las Sedes
+$sql_sedes = "SELECT ciudad_sede, direccion_sede FROM Sede ORDER BY ciudad_sede ASC";
+$stmt_sedes = sqlsrv_query($conn, $sql_sedes);
+
+if ($stmt_sedes === false) {
+    die("<pre>Error en la consulta de sedes: " . print_r(sqlsrv_errors(), true) . "</pre>");
+}
+
+$sedes = [];
+while ($row = sqlsrv_fetch_array($stmt_sedes, SQLSRV_FETCH_ASSOC)) {
+    $sedes[] = $row;
+}
+sqlsrv_free_stmt($stmt_sedes);
 
 // Procesar registro (solo cliente)
 if (isset($_POST['register'])) {
@@ -77,17 +112,6 @@ if (isset($_POST['login'])) {
         header("Location: index.php?error=5");
         exit();
     }
-}
-
-// Obtener películas para la cartelera
-$peliculas = [];
-$sql = "SELECT id_pelicula, titulo, sinopsis, duracion, clasificacion, fecha_estreno FROM Pelicula";
-$stmt = sqlsrv_query($conn, $sql);
-if ($stmt) {
-    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-        $peliculas[] = $row;
-    }
-    sqlsrv_free_stmt($stmt);
 }
 
 sqlsrv_close($conn);
@@ -164,28 +188,36 @@ sqlsrv_close($conn);
         <!-- Sección Cartelera -->
         <div class="section" id="cartelera">
             <h2>Cartelera</h2>
-            <div class="movie-grid">
-                <?php foreach ($peliculas as $pelicula): ?>
-                    <div class="movie-card">
-                        <div class="movie-image">
-                            <img src="/images/<?php echo $pelicula['id_pelicula']; ?>.jpg" alt="<?php echo $pelicula['titulo']; ?> Portada" onerror="this.src='/images/placeholder.jpg';">
-                        </div>
-                        <div class="movie-info">
-                            <h3><?php echo $pelicula['titulo']; ?></h3>
-                            <p><strong>Sinopsis:</strong> <?php echo substr($pelicula['sinopsis'], 0, 100); ?>...</p>
-                            <p><strong>Duración:</strong> <?php echo $pelicula['duracion']; ?> min</p>
-                            <p><strong>Clasificación:</strong> <?php echo $pelicula['clasificacion']; ?></p>
-                            <p><strong>Estreno:</strong> <?php echo $pelicula['fecha_estreno']; ?></p>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
+            <?php if (empty($cartelera)): ?>
+                <p>No hay funciones disponibles en este momento.</p>
+            <?php else: ?>
+                <ul>
+                    <?php foreach ($cartelera as $funcion): ?>
+                        <li>
+                            <strong><?php echo htmlspecialchars($funcion['titulo']); ?></strong> - 
+                            Sala: <?php echo htmlspecialchars($funcion['nombre_sala']); ?> (<?php echo htmlspecialchars($funcion['ciudad_sede']); ?>) - 
+                            Fecha y Hora: <?php echo $funcion['fecha_hora']->format('d/m/Y H:i'); ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
         </div>
 
         <!-- Sección Sedes -->
         <div class="section" id="sedes">
             <h2>Sedes</h2>
-            <p>Próximamente: Selecciona tu cine favorito.</p>
+            <?php if (empty($sedes)): ?>
+                <p>No hay sedes disponibles en este momento.</p>
+            <?php else: ?>
+                <ul>
+                    <?php foreach ($sedes as $sede): ?>
+                        <li>
+                            <strong><?php echo htmlspecialchars($sede['ciudad_sede']); ?></strong> - 
+                            Dirección: <?php echo htmlspecialchars($sede['direccion_sede']); ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
         </div>
     </div>
     <footer>
