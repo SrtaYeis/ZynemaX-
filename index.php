@@ -79,16 +79,40 @@ if (isset($_POST['login'])) {
     }
 }
 
-// Obtener películas para la cartelera
-$peliculas = [];
-$sql = "SELECT id_pelicula, titulo, sinopsis, duracion, clasificacion, fecha_estreno FROM Pelicula";
-$stmt = sqlsrv_query($conn, $sql);
-if ($stmt) {
-    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-        $peliculas[] = $row;
-    }
-    sqlsrv_free_stmt($stmt);
+// Consulta para la Cartelera (Películas, Funciones y Salas)
+$sql_cartelera = "
+    SELECT p.titulo, f.fecha_hora, s.nombre_sala, se.ciudad_sede
+    FROM Funcion f
+    INNER JOIN Pelicula p ON f.id_pelicula = p.id_pelicula
+    INNER JOIN Sala s ON f.id_sala = s.id_sala
+    INNER JOIN Sede se ON s.id_sede = se.id_sede
+    WHERE f.fecha_hora >= GETDATE()
+    ORDER BY f.fecha_hora ASC";
+$stmt_cartelera = sqlsrv_query($conn, $sql_cartelera);
+
+if ($stmt_cartelera === false) {
+    die("<pre>Error en la consulta de cartelera: " . print_r(sqlsrv_errors(), true) . "</pre>");
 }
+
+$cartelera = [];
+while ($row = sqlsrv_fetch_array($stmt_cartelera, SQLSRV_FETCH_ASSOC)) {
+    $cartelera[] = $row;
+}
+sqlsrv_free_stmt($stmt_cartelera);
+
+// Consulta para las Sedes
+$sql_sedes = "SELECT ciudad_sede, direccion_sede FROM Sede ORDER BY ciudad_sede ASC";
+$stmt_sedes = sqlsrv_query($conn, $sql_sedes);
+
+if ($stmt_sedes === false) {
+    die("<pre>Error en la consulta de sedes: " . print_r(sqlsrv_errors(), true) . "</pre>");
+}
+
+$sedes = [];
+while ($row = sqlsrv_fetch_array($stmt_sedes, SQLSRV_FETCH_ASSOC)) {
+    $sedes[] = $row;
+}
+sqlsrv_free_stmt($stmt_sedes);
 
 sqlsrv_close($conn);
 ?>
