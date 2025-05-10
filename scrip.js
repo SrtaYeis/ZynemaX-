@@ -1,4 +1,5 @@
 function showForm(formType) {
+    console.log("showForm called with:", formType);
     const loginForm = document.getElementById('login-form');
     const registerForm = document.getElementById('register-form');
 
