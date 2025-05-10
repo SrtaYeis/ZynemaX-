@@ -73,8 +73,18 @@ if (isset($_POST['confirm_reservation'])) {
     $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
     $id_reserva = $row['id_reserva'];
 
-    // Vincular la reserva con una función (usamos id_funcion = 13 como ejemplo)
-    $id_funcion = 13; // Ajustar según lógica real
+    // Obtener el id_funcion basado en la película y sala seleccionadas
+    $sql = "SELECT id_funcion FROM Funcion WHERE id_pelicula = ? AND id_sala = ?";
+    $params = [$_SESSION['selected_movie'], $_SESSION['selected_sala']];
+    $stmt = sqlsrv_query($conn, $sql, $params);
+    if ($stmt && $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+        $id_funcion = $row['id_funcion'];
+    } else {
+        die("Error: No se encontró una función para la película y sala seleccionadas.");
+    }
+    sqlsrv_free_stmt($stmt);
+
+    // Vincular la reserva con la función
     $sql = "INSERT INTO Reserva_funcion (id_reserva, id_funcion) VALUES (?, ?)";
     $params = [$id_reserva, $id_funcion];
     $stmt = sqlsrv_query($conn, $sql, $params);
@@ -84,6 +94,7 @@ if (isset($_POST['confirm_reservation'])) {
     }
 
     $_SESSION['reservation_id'] = $id_reserva;
+    $_SESSION['function_id'] = $id_funcion; // Guardar para usar en el resumen
     header("Location: pelicula.php?step=payment");
     exit();
 }
@@ -109,6 +120,7 @@ if (isset($_POST['process_payment'])) {
     unset($_SESSION['selected_sala']);
     unset($_SESSION['selected_butaca']);
     unset($_SESSION['reservation_id']);
+    unset($_SESSION['function_id']);
     header("Location: pelicula.php?payment_success=1");
     exit();
 }
@@ -160,6 +172,8 @@ if (isset($_POST['process_payment'])) {
                         echo "</form>";
                     }
                     sqlsrv_free_stmt($stmt);
+                } else {
+                    echo "<p>Error al cargar las películas: " . print_r(sqlsrv_errors(), true) . "</p>";
                 }
                 ?>
             </div>
@@ -182,6 +196,8 @@ if (isset($_POST['process_payment'])) {
                         echo "</form>";
                     }
                     sqlsrv_free_stmt($stmt);
+                } else {
+                    echo "<p>Error al cargar las sedes: " . print_r(sqlsrv_errors(), true) . "</p>";
                 }
                 ?>
             </div>
@@ -204,6 +220,8 @@ if (isset($_POST['process_payment'])) {
                         echo "</form>";
                     }
                     sqlsrv_free_stmt($stmt);
+                } else {
+                    echo "<p>Error al cargar las salas: " . print_r(sqlsrv_errors(), true) . "</p>";
                 }
                 ?>
             </div>
@@ -226,6 +244,8 @@ if (isset($_POST['process_payment'])) {
                         echo "</form>";
                     }
                     sqlsrv_free_stmt($stmt);
+                } else {
+                    echo "<p>Error al cargar las butacas: " . print_r(sqlsrv_errors(), true) . "</p>";
                 }
                 ?>
             </div>
@@ -253,14 +273,17 @@ if (isset($_POST['process_payment'])) {
                         JOIN Funcion f ON p.id_pelicula = f.id_pelicula 
                         JOIN Sala sa ON f.id_sala = sa.id_sala 
                         JOIN Sede s ON sa.id_sede = s.id_sede 
-                        JOIN Butaca b ON b.id_sala = sa.id_sala 
-                        WHERE f.id_funcion = 13"; // Ajustar con ID de función real
-                $stmt = sqlsrv_query($conn, $sql);
+                        JOIN Butaca b ON b.id_butaca = ? 
+                        WHERE f.id_funcion = ?";
+                $params = [$_SESSION['selected_butaca'], $_SESSION['function_id']];
+                $stmt = sqlsrv_query($conn, $sql, $params);
                 if ($stmt && $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                     echo "<p><strong>Película:</strong> " . $row['titulo'] . "</p>";
                     echo "<p><strong>Sede:</strong> " . $row['ciudad_sede'] . "</p>";
                     echo "<p><strong>Sala:</strong> " . $row['nombre_sala'] . "</p>";
                     echo "<p><strong>Butaca:</strong> Fila " . $row['fila'] . ", Número " . $row['numero_butaca'] . "</p>";
+                } else {
+                    echo "<p>Error al cargar el resumen: " . print_r(sqlsrv_errors(), true) . "</p>";
                 }
                 sqlsrv_free_stmt($stmt);
                 ?>
