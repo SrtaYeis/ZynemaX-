@@ -1,3 +1,266 @@
+Jass&
+jasss_s
+Compartiendo su pantalla
+
+DDD[BRUH]
+ — ayer a las 21:08
+csS
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), url('https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+    background-size: cover;
+Expandir
+message.txt
+3 KB
+php
+<?php
+header("Content-Type: text/html; charset=UTF-8");
+session_start();
+
+// Conexión a la base de datos usando la cadena de conexión de Azure
+$connectionString = getenv("ZynemaxDBConnection");
+Expandir
+message.txt
+6 KB
+function showForm(formType) {
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+
+    if (formType === 'login') {
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+    } else if (formType === 'register') {
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'block';
+    }
+}
+scrip.js
+<?php
+session_start();
+session_destroy();
+header("Location: index.php");
+exit();
+?>
+
+logout.php
+---------
+function showForm(formType) {
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+
+    if (formType === 'login') {
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+    } else if (formType === 'register') {
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'block';
+    }
+}
+scrip.js
+------------------
+<?php
+session_start();
+session_destroy();
+header("Location: index.php");
+exit();
+?>
+
+logout.php
+Jass& — ayer a las 21:17
+Array ( [0] => Array ( [0] => IMSSP [SQLSTATE] => IMSSP [1] => -1 [code] => -1 [2] => Invalid option ConnectionString was passed to sqlsrv_connect. [message] => Invalid option ConnectionString was passed to sqlsrv_connect. ) )
+Fabrio — ayer a las 21:18
+INSERTS
+--USUARIO
+INSERT INTO Usuario (dni, nombre, email, contrasena, tipo_usuario) VALUES
+(70123456, 'José Quispe Huamán', 'jose.quispe@gmail.com', 'hashed_pwd_123', 'cliente'),
+(70234567, 'María Mamani Flores', 'maria.mamani@hotmail.com', 'hashed_pwd_234', 'cliente'),
+(70345678, 'Carlos Sánchez Rojas', 'carlos.sr@upc.edu.pe', 'hashed_pwd_345', 'cliente'),
+(70456789, 'Lucía Vargas Tapia', 'lucia.vt@gmail.com', 'hashed_pwd_456', 'cliente'),
+Expandir
+Inserts.txt
+7 KB
+Fabrio — 20:53
+--PELICULA
+INSERT INTO Pelicula (id_pelicula, titulo, sinopsis, duracion, clasificacion, fecha_estreno) VALUES
+(3001, 'Avengers: El Fin', 'Los héroes se unen para salvar el universo.', 150, 'PG-13', '2025-01-10'),
+(3002, 'Wiñaypacha', 'Una pareja aymara enfrenta la soledad en los Andes.', 87, 'PG', '2025-02-15'),
+(3003, 'Misión Imposible 8', 'Ethan Hunt en una nueva aventura global.', 140, 'PG-13', '2025-03-05'),
+(3004, 'La Casa del Terror', 'Una familia enfrenta horrores en la selva peruana.', 105, 'R', '2025-04-12'),
+(3005, 'Amor en Lima', 'Un romance entre un chef y una artista en Miraflores.', 110, 'PG', '2025-05-20'),
+(3006, 'Y tu mamá también', 'Dos amigos en un viaje inolvidable por México.', 106, 'R', '2025-06-01'),
+(3007, 'Cementerio General 2', 'Secuela del terror sobrenatural en Huancayo.', 100, 'R', '2025-07-10'),
+(3008, 'Planeta Océano', 'Documental sobre la biodiversidad marina.', 95, 'G', '2025-08-15'),
+(3009, 'Rápidos y Furiosos 11', 'Carreras y acción sin límites.', 130, 'PG-13', '2025-09-05'),
+(3010, 'Cuentos de la Selva', 'Fábulas amazónicas para toda la familia.', 90, 'G', '2025-10-01');
+Fabrio — 21:04
+Reenviado
+TABLAS
+CREATE TABLE Usuario (
+    dni INT PRIMARY KEY, 
+    nombre VARCHAR(50), 
+    email VARCHAR(50), 
+    contrasena VARCHAR(50),  -- El nombre de la columna fue ajustado para evitar caracteres especiales
+    tipo_usuario VARCHAR(10) CHECK (tipo_usuario IN ('admin', 'cliente')) -- Reemplazado ENUM por VARCHAR con CHECK
+Expandir
+message.txt
+3 KB
+#general  •  ayer a las 21:03
+DDD[BRUH]
+ — 21:34
+---------------------------------------------------------------------------
+<?php
+ob_start(); // Iniciar el búfer de salida
+header("Content-Type: text/html; charset=UTF-8");
+session_start();
+
+// Conexión a la base de datos
+Expandir
+message.txt
+9 KB
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), url('https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+    background-size: cover;
+Expandir
+message.txt
+4 KB
+Jass& — 21:39
+Conexión fallida: Array
+(
+    [0] => Array
+        (
+            [0] => 42000
+            [SQLSTATE] => 42000
+            [1] => 4060
+            [code] => 4060
+            [2] => [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Cannot open database "ZynemaxDB" requested by the login. The login failed.
+            [message] => [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Cannot open database "ZynemaxDB" requested by the login. The login failed.
+        )
+
+    [1] => Array
+        (
+            [0] => 28000
+            [SQLSTATE] => 28000
+            [1] => 18456
+            [code] => 18456
+            [2] => [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Login failed for user 'zynemaxplus'.
+            [message] => [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Login failed for user 'zynemaxplus'.
+        )
+
+)
+
+-- USUARIO
+INSERT INTO Usuario (dni, nombre, email, contrasena, tipo_usuario) VALUES
+(70123456, 'José Quispe Huamán', 'jose.quispe@gmail.com', 'hashed_pwd_123', 'cliente'),
+(70234567, 'María Mamani Flores', 'maria.mamani@hotmail.com', 'hashed_pwd_234', 'cliente'),
+(70345678, 'Carlos Sánchez Rojas', 'carlos.sr@upc.edu.pe', 'hashed_pwd_345', 'cliente'),
+Expandir
+insertsofi.txt
+7 KB
+HIROO_O★ — 21:44
+background image = https://sdmntprwestus2.oaiusercontent.com/files/00000000-0e3c-61f8-a48d-09825abbb319/raw?se=2025-05-10T03%3A29%3A07Z&sp=r&sv=2024-08-04&sr=b&scid=00000000-0000-0000-0000-000000000000&skoid=b64a43d9-3512-45c2-98b4-dea55d094240&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-05-09T04%3A15%3A52Z&ske=2025-05-10T04%3A15%3A52Z&sks=b&skv=2024-08-04&sig=Wp7DU3jYLU3hsossgtc1H/wr%2BidTrOYMkuGxR9OJNnI%3D
+Imagen
+Jass& — 21:46
+<?php
+ob_start(); // Iniciar el búfer de salida
+header("Content-Type: text/html; charset=UTF-8");
+session_start();
+
+// Conexión a la base de datos
+$serverName = "database-zynemaxplus-server.database.windows.net";
+$connectionInfo = [
+    "Database" => "database-zynemaxplus-server",
+    "UID" => "zynemaxplus",
+    "PWD" => "grupo2_1al10",
+    "Encrypt" => true,
+    "TrustServerCertificate" => false
+];
+
+$conn = sqlsrv_connect($serverName, $connectionInfo);
+
+if ($conn === false) {
+    die("<pre>Conexión fallida: " . print_r(sqlsrv_errors(), true) . "</pre>");
+}
+DDD[BRUH]
+ — 21:49
+----------------------
+php
+<?php
+ob_start(); // Iniciar el búfer de salida
+header("Content-Type: text/html; charset=UTF-8");
+session_start();
+
+// Conexión a la base de datos
+Expandir
+message.txt
+9 KB
+----------------------
+css
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), url('https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+    background-size: cover;
+Expandir
+message.txt
+4 KB
+DDD[BRUH]
+ — 22:06
+site/wwwroot/web.config
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <system.webServer>
+        <defaultDocument>
+            <files>
+                <add value="index.php" />
+            </files>
+        </defaultDocument>
+    </system.webServer>
+</configuration>
+Jass& — 22:07
+Imagen
+DDD[BRUH]
+ — 22:08
+cd /home/site/wwwroot
+-..
+<?php
+ob_start(); // Iniciar el búfer de salida
+header("Content-Type: text/html; charset=UTF-8");
+session_start();
+
+// Conexión a la base de datos
+Expandir
+message.txt
+9 KB
+SCRIPT
+function showForm(formType) {
+    console.log("showForm called with:", formType);
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+
+    if (formType === 'login') {
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+    } else if (formType === 'register') {
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'block';
+    }
+} 
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), url('https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+    background-size: cover;
+Expandir
+message.txt
+4 KB
+﻿
 body {
     font-family: 'Arial', sans-serif;
     margin: 0;
@@ -108,112 +371,42 @@ footer {
     width: 100%;
 }
 
-/* Estilos para la sección de Cartelera */
-.sede-selector {
-    margin-bottom: 1rem;
-}
-.sede-selector label {
-    color: #ffd700;
-    margin-right: 0.5rem;
-}
-.sede-selector select {
-    background: #333;
-    color: #fff;
-    border: 1px solid #b22222;
-    padding: 0.5rem;
-    border-radius: 5px;
-}
-
-.date-carousel {
-    display: flex;
-    overflow-x: auto;
-    margin-bottom: 2rem;
-    border-bottom: 2px solid #b22222;
-}
-.date-tab {
-    padding: 0.5rem 1rem;
-    color: #fff;
-    text-decoration: none;
-    border-bottom: 3px solid transparent;
-    margin-right: 0.5rem;
-    white-space: nowrap;
-}
-.date-tab:hover {
-    color: #ffd700;
-}
-.date-tab.active {
-    color: #ffd700;
-    border-bottom: 3px solid #ffd700;
-}
-
-.movie-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+/* Estilos para la cartelera */
+.movie-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
 }
 .movie-card {
-    display: flex;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 5px;
-    padding: 1rem;
-    border-left: 4px solid #ffd700;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #b22222;
+    transition: transform 0.2s;
 }
-.movie-poster img {
-    width: 150px;
-    height: 220px;
+.movie-card:hover {
+    transform: scale(1.05);
+}
+.movie-image {
+    width: 100%;
+    height: 300px;
+    background: #333;
+    overflow: hidden;
+}
+.movie-image img {
+    width: 100%;
+    height: 100%;
     object-fit: cover;
-    border-radius: 5px;
-    margin-right: 1rem;
-}
-.movie-details {
-    flex: 1;
-}
-.movie-details h3 {
-    color: #ffd700;
-    margin: 0 0 0.5rem 0;
 }
 .movie-info {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 0.5rem;
-}
-.clasificacion, .duracion {
-    background: #b22222;
-    color: #fff;
-    padding: 0.2rem 0.5rem;
-    border-radius: 3px;
-    font-size: 0.9rem;
-}
-.movie-formats {
-    margin-bottom: 0.5rem;
-}
-.formato {
-    background: #333;
-    color: #ffd700;
-    padding: 0.2rem 0.5rem;
-    margin-right: 0.5rem;
-    border-radius: 3px;
-    font-size: 0.9rem;
-}
-.movie-schedule {
-    color: #fff;
-}
-
-/* Estilos para la sección de Sedes */
-.section ul {
-    list-style-type: none;
-    padding: 0;
-}
-.section li {
     padding: 1rem;
-    margin-bottom: 0.5rem;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 5px;
-    border-left: 4px solid #ffd700;
 }
-.section li:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
-.section li strong {
+.movie-info h3 {
     color: #ffd700;
+    margin: 0 0 0.5rem;
+}
+.movie-info p {
+    margin: 0.3rem 0;
+    color: #fff;
 }
