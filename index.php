@@ -19,40 +19,54 @@ if ($conn === false) {
     die("<pre>Conexión fallida: " . print_r(sqlsrv_errors(), true) . "</pre>");
 }
 
-// Consulta para la Cartelera (Películas, Funciones y Salas)
-$sql_cartelera = "
-    SELECT p.titulo, f.fecha_hora, s.nombre_sala, se.ciudad_sede
-    FROM Funcion f
-    INNER JOIN Pelicula p ON f.id_pelicula = p.id_pelicula
-    INNER JOIN Sala s ON f.id_sala = s.id_sala
-    INNER JOIN Sede se ON s.id_sede = se.id_sede
-    WHERE f.fecha_hora >= GETDATE()
-    ORDER BY f.fecha_hora ASC";
-$stmt_cartelera = sqlsrv_query($conn, $sql_cartelera);
-
-if ($stmt_cartelera === false) {
-    die("<pre>Error en la consulta de cartelera: " . print_r(sqlsrv_errors(), true) . "</pre>");
-}
-
-$cartelera = [];
-while ($row = sqlsrv_fetch_array($stmt_cartelera, SQLSRV_FETCH_ASSOC)) {
-    $cartelera[] = $row;
-}
-sqlsrv_free_stmt($stmt_cartelera);
-
-// Consulta para las Sedes
-$sql_sedes = "SELECT ciudad_sede, direccion_sede FROM Sede ORDER BY ciudad_sede ASC";
+// Obtener las sedes para el selector
+$sql_sedes = "SELECT id_sede, ciudad_sede, direccion_sede FROM Sede ORDER BY ciudad_sede ASC";
 $stmt_sedes = sqlsrv_query($conn, $sql_sedes);
-
-if ($stmt_sedes === false) {
-    die("<pre>Error en la consulta de sedes: " . print_r(sqlsrv_errors(), true) . "</pre>");
-}
-
 $sedes = [];
 while ($row = sqlsrv_fetch_array($stmt_sedes, SQLSRV_FETCH_ASSOC)) {
     $sedes[] = $row;
 }
 sqlsrv_free_stmt($stmt_sedes);
+
+// Determinar la sede seleccionada (por defecto, la primera sede)
+$selected_sede = isset($_GET['sede']) ? (int)$_GET['sede'] : (!empty($sedes) ? $sedes[0]['id_sede'] : null);
+
+// Obtener las fechas disponibles para el carrusel
+$sql_fechas = "
+    SELECT DISTINCT CAST(f.fecha_hora AS DATE) AS fecha
+    FROM Funcion f
+    WHERE f.fecha_hora >= GETDATE()
+    ORDER BY fecha ASC";
+$stmt_fechas = sqlsrv_query($conn, $sql_fechas);
+$fechas = [];
+while ($row = sqlsrv_fetch_array($stmt_fechas, SQLSRV_FETCH_ASSOC)) {
+    $fechas[] = $row['fecha'];
+}
+sqlsrv_free_stmt($stmt_fechas);
+
+// Determinar la fecha seleccionada (por defecto, la primera fecha)
+$selected_fecha = isset($_GET['fecha']) ? $_GET['fecha'] : (!empty($fechas) ? $fechas[0]->format('Y-m-d') : date('Y-m-d'));
+
+// Consulta para la Cartelera (Películas, Funciones y Salas)
+$sql_cartelera = "
+    SELECT p.id_pelicula, p.titulo, p.sinopsis, p.duracion, p.clasificacion,
+           f.fecha_hora, f.formato, s.nombre_sala, se.ciudad_sede
+    FROM Funcion f
+    INNER JOIN Pelicula p ON f.id_pelicula = p.id_pelicula
+    INNER JOIN Sala s ON f.id_sala = s.id_sala
+    INNER JOIN Sede se ON s.id_sede = se.id_sede
+    WHERE f.fecha_hora >= GETDATE()
+      AND se.id_sede = ?
+      AND CAST(f.fecha_hora AS DATE) = ?
+    ORDER BY p.titulo, f.fecha_hora ASC";
+$params = [$selected_sede, $selected_fecha];
+$stmt_cartelera = sqlsrv_query($conn, $sql_cartelera, $params);
+
+$cartelera = [];
+while ($row = sqlsrv_fetch_array($stmt_cartelera, SQLSRV_FETCH_ASSOC)) {
+    $cartelera[$row['id_pelicula']][] = $row;
+}
+sqlsrv_free_stmt($stmt_cartelera);
 
 // Procesar registro (solo cliente)
 if (isset($_POST['register'])) {
@@ -188,18 +202,66 @@ sqlsrv_close($conn);
         <!-- Sección Cartelera -->
         <div class="section" id="cartelera">
             <h2>Cartelera</h2>
-            <?php if (empty($cartelera)): ?>
-                <p>No hay funciones disponibles en este momento.</p>
-            <?php else: ?>
-                <ul>
-                    <?php foreach ($cartelera as $funcion): ?>
-                        <li>
-                            <strong><?php echo htmlspecialchars($funcion['titulo']); ?></strong> - 
-                            Sala: <?php echo htmlspecialchars($funcion['nombre_sala']); ?> (<?php echo htmlspecialchars($funcion['ciudad_sede']); ?>) - 
-                            Fecha y Hora: <?php echo $funcion['fecha_hora']->format('d/m/Y H:i'); ?>
-                        </li>
+            <!-- Selector de Sede -->
+            <div class="sede-selector">
+                <label for="sede">Seleccionar Cine:</label>
+                <select id="sede" name="sede" onchange="updateSede(this.value)">
+                    <?php foreach ($sedes as $sede): ?>
+                        <option value="<?php echo $sede['id_sede']; ?>" <?php echo $sede['id_sede'] == $selected_sede ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($sede['ciudad_sede']); ?> - <?php echo htmlspecialchars($sede['direccion_sede']); ?>
+                        </option>
                     <?php endforeach; ?>
-                </ul>
+                </select>
+            </div>
+
+            <!-- Carrusel de Fechas -->
+            <div class="date-carousel">
+                <?php foreach ($fechas as $fecha): ?>
+                    <a href="?sede=<?php echo $selected_sede; ?>&fecha=<?php echo $fecha->format('Y-m-d'); ?>#cartelera"
+                       class="date-tab <?php echo $fecha->format('Y-m-d') == $selected_fecha ? 'active' : ''; ?>">
+                        <?php echo strtoupper($fecha->format('D d M')); ?>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+
+            <!-- Lista de Películas -->
+            <?php if (empty($cartelera)): ?>
+                <p>No hay funciones disponibles para esta fecha y sede.</p>
+            <?php else: ?>
+                <div class="movie-list">
+                    <?php foreach ($cartelera as $pelicula_id => $funciones): ?>
+                        <?php $pelicula = $funciones[0]; ?>
+                        <div class="movie-card">
+                            <!-- Póster (Placeholder, ya que no tenemos imágenes en la base de datos) -->
+                            <div class="movie-poster">
+                                <img src="https://via.placeholder.com/150x220?text=<?php echo urlencode($pelicula['titulo']); ?>" alt="<?php echo htmlspecialchars($pelicula['titulo']); ?>">
+                            </div>
+                            <div class="movie-details">
+                                <h3><?php echo htmlspecialchars($pelicula['titulo']); ?></h3>
+                                <p class="movie-info">
+                                    <span class="clasificacion"><?php echo htmlspecialchars($pelicula['clasificacion']); ?></span>
+                                    <span class="duracion"><?php echo htmlspecialchars($pelicula['duracion']); ?> min</span>
+                                </p>
+                                <!-- Formatos -->
+                                <p class="movie-formats">
+                                    <?php
+                                    $formatos = array_unique(array_column($funciones, 'formato'));
+                                    foreach ($formatos as $formato) {
+                                        echo "<span class='formato'>" . htmlspecialchars($formato) . "</span>";
+                                    }
+                                    ?>
+                                </p>
+                                <!-- Horarios -->
+                                <p class="movie-schedule">
+                                    <?php
+                                    $horarios = array_unique(array_map(function($f) { return $f['fecha_hora']->format('H:i'); }, $funciones));
+                                    echo implode(' | ', $horarios);
+                                    ?>
+                                </p>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
             <?php endif; ?>
         </div>
 
