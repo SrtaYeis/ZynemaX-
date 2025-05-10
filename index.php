@@ -6,7 +6,7 @@ session_start();
 // Conexión a la base de datos
 $serverName = "database-zynemaxplus-server.database.windows.net";
 $connectionInfo = [
-    "Database" => "database-zynemaxplus-server",
+    "Database" => "ZynemaxDB",
     "UID" => "zynemaxplus",
     "PWD" => "grupo2_1al10",
     "Encrypt" => true,
@@ -52,7 +52,7 @@ if (isset($_POST['login'])) {
     $contrasena = isset($_POST['contrasena']) ? $_POST['contrasena'] : null;
 
     if ($dni && $contrasena) {
-        $sql = "SELECT dni, nombre, contrasena, tipo_usuario FROM Usuario WHERE dni = ?";
+        $sql = "SELECT dni, nombre, email, contrasena, tipo_usuario FROM Usuario WHERE dni = ?";
         $params = [$dni];
         $stmt = sqlsrv_query($conn, $sql, $params);
 
@@ -61,6 +61,7 @@ if (isset($_POST['login'])) {
             if (password_verify($contrasena, $row['contrasena'])) {
                 $_SESSION['dni'] = $row['dni'];
                 $_SESSION['nombre'] = $row['nombre'];
+                $_SESSION['email'] = $row['email'];
                 $_SESSION['tipo_usuario'] = $row['tipo_usuario'];
                 header("Location: index.php?login_success=1");
                 exit();
@@ -79,41 +80,6 @@ if (isset($_POST['login'])) {
     }
 }
 
-// Consulta para la Cartelera (Películas, Funciones y Salas)
-$sql_cartelera = "
-    SELECT p.titulo, f.fecha_hora, s.nombre_sala, se.ciudad_sede
-    FROM Funcion f
-    INNER JOIN Pelicula p ON f.id_pelicula = p.id_pelicula
-    INNER JOIN Sala s ON f.id_sala = s.id_sala
-    INNER JOIN Sede se ON s.id_sede = se.id_sede
-    WHERE f.fecha_hora >= GETDATE()
-    ORDER BY f.fecha_hora ASC";
-$stmt_cartelera = sqlsrv_query($conn, $sql_cartelera);
-
-if ($stmt_cartelera === false) {
-    die("<pre>Error en la consulta de cartelera: " . print_r(sqlsrv_errors(), true) . "</pre>");
-}
-
-$cartelera = [];
-while ($row = sqlsrv_fetch_array($stmt_cartelera, SQLSRV_FETCH_ASSOC)) {
-    $cartelera[] = $row;
-}
-sqlsrv_free_stmt($stmt_cartelera);
-
-// Consulta para las Sedes
-$sql_sedes = "SELECT ciudad_sede, direccion_sede FROM Sede ORDER BY ciudad_sede ASC";
-$stmt_sedes = sqlsrv_query($conn, $sql_sedes);
-
-if ($stmt_sedes === false) {
-    die("<pre>Error en la consulta de sedes: " . print_r(sqlsrv_errors(), true) . "</pre>");
-}
-
-$sedes = [];
-while ($row = sqlsrv_fetch_array($stmt_sedes, SQLSRV_FETCH_ASSOC)) {
-    $sedes[] = $row;
-}
-sqlsrv_free_stmt($stmt_sedes);
-
 sqlsrv_close($conn);
 ?>
 
@@ -123,20 +89,19 @@ sqlsrv_close($conn);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zynemax+ | Plataforma de Cine</title>
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
     <header>
         <h1>Zynemax+ | Tu Cine Favorito</h1>
     </header>
     <nav>
-        <a href="#cartelera">Cartelera</a>
-        <a href="#sedes">Sedes</a>
         <?php if (!isset($_SESSION['dni'])): ?>
             <a href="#" onclick="showForm('login')">Login</a>
             <a href="#" onclick="showForm('register')">Register</a>
         <?php else: ?>
-            <a href="/logout.php">Logout (<?php echo $_SESSION['nombre']; ?>)</a>
+            <a href="#" onclick="showForm('profile')">Perfil (<?php echo $_SESSION['nombre']; ?>)</a>
+            <a href="/logout.php">Logout</a>
         <?php endif; ?>
     </nav>
     <div class="container">
@@ -174,48 +139,29 @@ sqlsrv_close($conn);
                 </div>
             </div>
         <?php else: ?>
+            <!-- Mensaje de bienvenida -->
             <div class="welcome-message">
                 <?php if (isset($_GET['login_success'])): ?>
                     <h2>Bienvenido, <?php echo $_SESSION['nombre']; ?> (<?php echo $_SESSION['tipo_usuario']; ?>)</h2>
-                    <p>Explora la cartelera y reserva tus entradas.</p>
                 <?php else: ?>
                     <h2>Bienvenido, <?php echo $_SESSION['nombre']; ?> (<?php echo $_SESSION['tipo_usuario']; ?>)</h2>
-                    <p>Explora la cartelera y reserva tus entradas.</p>
                 <?php endif; ?>
             </div>
-        <?php endif; ?>
 
-        <!-- Sección Cartelera -->
-        <div class="section" id="cartelera">
-            <h2>Cartelera</h2>
-            <div class="movie-grid">
-                <?php foreach ($peliculas as $pelicula): ?>
-                    <div class="movie-card">
-                        <div class="movie-image">
-                            <img src="/images/<?php echo $pelicula['id_pelicula']; ?>.jpg" alt="<?php echo $pelicula['titulo']; ?> Portada" onerror="this.src='/images/placeholder.jpg';">
-                        </div>
-                        <div class="movie-info">
-                            <h3><?php echo $pelicula['titulo']; ?></h3>
-                            <p><strong>Sinopsis:</strong> <?php echo substr($pelicula['sinopsis'], 0, 100); ?>...</p>
-                            <p><strong>Duración:</strong> <?php echo $pelicula['duracion']; ?> min</p>
-                            <p><strong>Clasificación:</strong> <?php echo $pelicula['clasificacion']; ?></p>
-                            <p><strong>Estreno:</strong> <?php echo $pelicula['fecha_estreno']; ?></p>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
+            <!-- Sección de Perfil -->
+            <div id="profile-form" class="form-container" style="display: none;">
+                <h2>Perfil de Usuario</h2>
+                <p><strong>DNI:</strong> <?php echo $_SESSION['dni']; ?></p>
+                <p><strong>Nombre:</strong> <?php echo $_SESSION['nombre']; ?></p>
+                <p><strong>Email:</strong> <?php echo $_SESSION['email']; ?></p>
+                <p><strong>Tipo de Usuario:</strong> <?php echo $_SESSION['tipo_usuario']; ?></p>
             </div>
-        </div>
-
-        <!-- Sección Sedes -->
-        <div class="section" id="sedes">
-            <h2>Sedes</h2>
-            <p>Próximamente: Selecciona tu cine favorito.</p>
-        </div>
+        <?php endif; ?>
     </div>
     <footer>
         <p>© 2025 Zynemax+ | Todos los derechos reservados</p>
     </footer>
-    <script src="/scrip.js" defer></script>
+    <script src="/script.js" defer></script>
 </body>
 </html>
 <?php
