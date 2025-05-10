@@ -3,6 +3,11 @@ ob_start(); // Iniciar el búfer de salida
 header("Content-Type: text/html; charset=UTF-8");
 session_start();
 
+// Enable error reporting for debugging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 // Conexión a la base de datos
 $serverName = "database-zynemaxplus-server.database.windows.net";
 $connectionInfo = [
@@ -28,11 +33,22 @@ if (isset($_POST['register'])) {
     $tipo_usuario = 'cliente';
 
     if ($dni && $nombre && $email && $contrasena) {
+        // Check if DNI already exists
+        $sql_check = "SELECT COUNT(*) AS count FROM Usuario WHERE dni = ?";
+        $params_check = [$dni];
+        $stmt_check = sqlsrv_query($conn, $sql_check, $params_check);
+        $row_check = sqlsrv_fetch_array($stmt_check, SQLSRV_FETCH_ASSOC);
+        if ($row_check['count'] > 0) {
+            header("Location: index.php?error=11");
+            exit();
+        }
+
         $sql = "INSERT INTO Usuario (dni, nombre, email, contrasena, tipo_usuario) VALUES (?, ?, ?, ?, ?)";
         $params = [$dni, $nombre, $email, $contrasena, $tipo_usuario];
         $stmt = sqlsrv_query($conn, $sql, $params);
 
         if ($stmt === false) {
+            echo "<pre>SQL Error: " . print_r(sqlsrv_errors(), true) . "</pre>";
             header("Location: index.php?error=1");
             exit();
         } else {
@@ -257,11 +273,12 @@ sqlsrv_close($conn);
             <?php
             $error = isset($_GET['error']) ? $_GET['error'] : 0;
             $register_success = isset($_GET['register_success']) ? true : false;
-            if ($error == 1) echo "<p style='color:red;'>Error al registrarse. Verifica los datos.</p>";
-            if ($error == 2) echo "<p style='color:red;'>Faltan datos en el formulario.</p>";
+            if ($error == 1) echo "<p style='color:red;'>Error al registrarse. Verifica los datos o intenta con otro DNI.</p>";
+            if ($error == 2) echo "<p style='color:red;'>Faltan datos en el formulario. Completa todos los campos.</p>";
             if ($error == 3) echo "<p style='color:red;'>Contraseña incorrecta.</p>";
             if ($error == 4) echo "<p style='color:red;'>Usuario no encontrado.</p>";
             if ($error == 5) echo "<p style='color:red;'>Faltan datos para iniciar sesión.</p>";
+            if ($error == 11) echo "<p style='color:red;'>El DNI ya está registrado. Usa otro DNI.</p>";
             if ($register_success) echo "<p style='color:green;'>Registro exitoso. Por favor inicia sesión.</p>";
             ?>
             <div id="login-form" class="form-container">
