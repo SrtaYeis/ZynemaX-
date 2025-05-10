@@ -6,7 +6,7 @@ session_start();
 // Conexión a la base de datos
 $serverName = "database-zynemaxplus-server.database.windows.net";
 $connectionInfo = [
-    "Database" => "database-zynemaxplus-server",
+    "Database" => "ZynemaxDB",
     "UID" => "zynemaxplus",
     "PWD" => "grupo2_1al10",
     "Encrypt" => true,
@@ -173,7 +173,7 @@ if (isset($_POST['process_payment'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zynemax+ | Películas</title>
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
     <header>
@@ -198,19 +198,25 @@ if (isset($_POST['process_payment'])) {
             <div id="movies-form" class="form-container">
                 <h2>Selecciona una Película</h2>
                 <?php
-                $sql = "SELECT * FROM Pelicula";
+                $sql = "SELECT DISTINCT p.* 
+                        FROM Pelicula p 
+                        JOIN Funcion f ON p.id_pelicula = f.id_pelicula";
                 $stmt = sqlsrv_query($conn, $sql);
                 if ($stmt) {
-                    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                        echo "<form method='POST' style='margin: 10px 0;'>";
-                        echo "<input type='hidden' name='movie_id' value='" . $row['id_pelicula'] . "'>";
-                        echo "<p><strong>Título:</strong> " . $row['titulo'] . "</p>";
-                        echo "<p><strong>Sinopsis:</strong> " . $row['sinopsis'] . "</p>";
-                        echo "<p><strong>Duración:</strong> " . $row['duracion'] . " min</p>";
-                        echo "<p><strong>Clasificación:</strong> " . $row['clasificacion'] . "</p>";
-                        echo "<p><strong>Fecha Estreno:</strong> " . $row['fecha_estreno']->format('Y-m-d') . "</p>";
-                        echo "<button type='submit' name='select_movie'>Seleccionar</button>";
-                        echo "</form>";
+                    if (sqlsrv_has_rows($stmt)) {
+                        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+                            echo "<form method='POST' style='margin: 10px 0;'>";
+                            echo "<input type='hidden' name='movie_id' value='" . $row['id_pelicula'] . "'>";
+                            echo "<p><strong>Título:</strong> " . $row['titulo'] . "</p>";
+                            echo "<p><strong>Sinopsis:</strong> " . $row['sinopsis'] . "</p>";
+                            echo "<p><strong>Duración:</strong> " . $row['duracion'] . " min</p>";
+                            echo "<p><strong>Clasificación:</strong> " . $row['clasificacion'] . "</p>";
+                            echo "<p><strong>Fecha Estreno:</strong> " . $row['fecha_estreno']->format('Y-m-d') . "</p>";
+                            echo "<button type='submit' name='select_movie'>Seleccionar</button>";
+                            echo "</form>";
+                        }
+                    } else {
+                        echo "<p>No hay películas con funciones disponibles.</p>";
                     }
                     sqlsrv_free_stmt($stmt);
                 } else {
@@ -302,7 +308,7 @@ if (isset($_POST['process_payment'])) {
     <footer>
         <p>© 2025 Zynemax+ | Todos los derechos reservados</p>
     </footer>
-    <script src="/scrip.js" defer></script>
+    <script src="/script.js" defer></script>
     <?php sqlsrv_close($conn); ?>
 </body>
 </html>
