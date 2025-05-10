@@ -1,3 +1,5 @@
+
+
 body {
     font-family: 'Arial', sans-serif;
     margin: 0;
@@ -7,26 +9,22 @@ body {
     background-attachment: fixed;
     color: #fff;
 }
-
 header {
     background-color: #1a1a1a;
     padding: 1rem;
     text-align: center;
     border-bottom: 3px solid #b22222;
 }
-
 header h1 {
     margin: 0;
     font-size: 2.5rem;
     color: #ffd700;
 }
-
 nav {
     background-color: #333;
     padding: 1rem;
     text-align: center;
 }
-
 nav a {
     color: #ffd700;
     text-decoration: none;
@@ -34,17 +32,14 @@ nav a {
     font-weight: bold;
     font-size: 1.1rem;
 }
-
 nav a:hover {
     color: #b22222;
 }
-
 .container {
     max-width: 1200px;
     margin: 2rem auto;
     padding: 0 1rem;
 }
-
 .section {
     background: rgba(255, 255, 255, 0.1);
     padding: 2rem;
@@ -53,37 +48,28 @@ nav a:hover {
     backdrop-filter: blur(5px);
     border: 1px solid #b22222;
 }
-
 .section h2 {
     color: #ffd700;
     border-bottom: 2px solid #b22222;
     padding-bottom: 0.5rem;
 }
-
 .auth-section {
     text-align: center;
-    margin: 2rem auto;
-    max-width: 400px;
+    margin-bottom: 2rem;
 }
-
-.auth-section h2 {
-    color: #ffd700;
-}
-
 .form-container {
     background: rgba(255, 255, 255, 0.9);
     color: #333;
     padding: 2rem;
     border-radius: 10px;
-    margin: 1rem 0;
+    max-width: 400px;
+    margin: 0 auto;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
-
 .form-container h2 {
     color: #b22222;
     margin-bottom: 1rem;
 }
-
 input, select, textarea {
     width: 100%;
     padding: 0.5rem;
@@ -92,7 +78,6 @@ input, select, textarea {
     border-radius: 5px;
     box-sizing: border-box;
 }
-
 button {
     background-color: #b22222;
     color: #fff;
@@ -102,11 +87,9 @@ button {
     cursor: pointer;
     margin-top: 0.5rem;
 }
-
 button:hover {
     background-color: #8b0000;
 }
-
 .welcome-message {
     text-align: center;
     background: rgba(255, 255, 255, 0.1);
@@ -114,57 +97,9 @@ button:hover {
     border-radius: 10px;
     margin-bottom: 2rem;
 }
-
 .welcome-message h2 {
     color: #ffd700;
 }
-
-.movie-item, .sede-item {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 1rem;
-    margin: 1rem 0;
-    border-radius: 5px;
-    border: 1px solid #ffd700;
-}
-
-.movie-item h3, .sede-item h3 {
-    margin: 0;
-    color: #ffd700;
-}
-
-.movie-item p, .sede-item p {
-    margin: 0.5rem 0;
-}
-
-.section form {
-    margin-top: 1rem;
-}
-
-select {
-    padding: 0.5rem;
-    margin: 0.5rem 0;
-    border-radius: 5px;
-    border: 1px solid #b22222;
-    background: #fff;
-    color: #333;
-    width: 100%;
-    max-width: 300px;
-}
-
-.ticket-section {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 2rem;
-    border-radius: 10px;
-    margin: 2rem 0;
-    border: 1px solid #ffd700;
-    text-align: center;
-}
-
-.ticket-section p {
-    margin: 0.5rem 0;
-    color: #fff;
-}
-
 footer {
     background-color: #1a1a1a;
     padding: 1rem;
@@ -173,4 +108,17 @@ footer {
     position: fixed;
     bottom: 0;
     width: 100%;
+}
+
+function showForm(formType) {
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+
+    if (formType === 'login') {
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+    } else if (formType === 'register') {
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'block';
+    }
 }
