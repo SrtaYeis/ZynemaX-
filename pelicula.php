@@ -232,10 +232,17 @@ if (isset($_POST['process_payment'])) {
                 <p>Esa película se transmite en la sala <strong><?php echo $_SESSION['sala_name']; ?></strong>.</p>
                 <h3>Asientos Disponibles:</h3>
                 <?php
-                $sql = "SELECT * FROM Butaca WHERE id_sala = ? AND estado = 'disponible'";
+                // Depuración: Mostrar el id_sala
+                echo "Debug: id_sala seleccionado = " . $_SESSION['selected_sala'] . "<br>";
+
+                $sql = "SELECT id_butaca, fila, numero_butaca 
+                        FROM Butaca 
+                        WHERE id_sala = ? AND estado = 'disponible'";
                 $params = [$_SESSION['selected_sala']];
                 $stmt = sqlsrv_query($conn, $sql, $params);
-                if ($stmt) {
+                if ($stmt === false) {
+                    echo "<p>Error al cargar las butacas: " . print_r(sqlsrv_errors(), true) . "</p>";
+                } else {
                     if (sqlsrv_has_rows($stmt)) {
                         while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                             echo "<form method='POST' style='margin: 10px 0;'>";
@@ -249,8 +256,6 @@ if (isset($_POST['process_payment'])) {
                         echo "<a href='pelicula.php'>Volver a seleccionar película</a>";
                     }
                     sqlsrv_free_stmt($stmt);
-                } else {
-                    echo "<p>Error al cargar las butacas: " . print_r(sqlsrv_errors(), true) . "</p>";
                 }
                 ?>
             </div>
