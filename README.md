@@ -1,2 +1,2 @@
 # ZynemaXPlus
-By: Fabricio
+
