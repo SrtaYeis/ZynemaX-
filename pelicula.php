@@ -120,7 +120,7 @@ if (isset($_POST['process_payment'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zynemax+ | Películas</title>
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
     <header>
@@ -128,7 +128,7 @@ if (isset($_POST['process_payment'])) {
     </header>
     <nav>
         <a href="/index.php">Inicio</a>
-        <a href="#" onclick="showForm('movies')">Películas</a>
+        <a href="/pelicula.php">Películas</a>
         <a href="/logout.php">Logout</a>
     </nav>
     <div class="container">
@@ -278,7 +278,7 @@ if (isset($_POST['process_payment'])) {
     <footer>
         <p>© 2025 Zynemax+ | Todos los derechos reservados</p>
     </footer>
-    <script src="/scrip.js" defer></script>
+    <script src="/script.js" defer></script>
     <?php sqlsrv_close($conn); ?>
 </body>
 </html>
