@@ -48,6 +48,7 @@ if (isset($_POST['register'])) {
 
 // Procesar login
 if (isset($_POST['login'])) {
+    echo "Procesando login..."; // Depuración
     $dni = isset($_POST['dni']) ? (int)$_POST['dni'] : null;
     $contrasena = isset($_POST['contrasena']) ? $_POST['contrasena'] : null;
 
@@ -63,18 +64,22 @@ if (isset($_POST['login'])) {
                 $_SESSION['nombre'] = $row['nombre'];
                 $_SESSION['email'] = $row['email'];
                 $_SESSION['tipo_usuario'] = $row['tipo_usuario'];
+                echo "Login exitoso, redirigiendo..."; // Depuración
                 header("Location: index.php?login_success=1");
                 exit();
             } else {
+                echo "Contraseña incorrecta"; // Depuración
                 header("Location: index.php?error=3");
                 exit();
             }
         } else {
+            echo "Usuario no encontrado"; // Depuración
             header("Location: index.php?error=4");
             exit();
         }
         sqlsrv_free_stmt($stmt);
     } else {
+        echo "Faltan datos"; // Depuración
         header("Location: index.php?error=5");
         exit();
     }
