@@ -6,7 +6,7 @@ session_start();
 // Conexión a la base de datos
 $serverName = "database-zynemaxplus-server.database.windows.net";
 $connectionInfo = [
-    "Database" => "database-zynemaxplus-server",
+    "Database" => "ZynemaxDB",
     "UID" => "zynemaxplus",
     "PWD" => "grupo2_1al10",
     "Encrypt" => true,
@@ -79,6 +79,17 @@ if (isset($_POST['login'])) {
     }
 }
 
+// Obtener películas para la cartelera
+$peliculas = [];
+$sql = "SELECT id_pelicula, titulo, sinopsis, duracion, clasificacion, fecha_estreno FROM Pelicula";
+$stmt = sqlsrv_query($conn, $sql);
+if ($stmt) {
+    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+        $peliculas[] = $row;
+    }
+    sqlsrv_free_stmt($stmt);
+}
+
 sqlsrv_close($conn);
 ?>
 
@@ -88,7 +99,7 @@ sqlsrv_close($conn);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zynemax+ | Plataforma de Cine</title>
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
     <header>
@@ -153,7 +164,22 @@ sqlsrv_close($conn);
         <!-- Sección Cartelera -->
         <div class="section" id="cartelera">
             <h2>Cartelera</h2>
-            <p>Próximamente: Lista de películas disponibles.</p>
+            <div class="movie-grid">
+                <?php foreach ($peliculas as $pelicula): ?>
+                    <div class="movie-card">
+                        <div class="movie-image">
+                            <img src="/images/<?php echo $pelicula['id_pelicula']; ?>.jpg" alt="<?php echo $pelicula['titulo']; ?> Portada" onerror="this.src='/images/placeholder.jpg';">
+                        </div>
+                        <div class="movie-info">
+                            <h3><?php echo $pelicula['titulo']; ?></h3>
+                            <p><strong>Sinopsis:</strong> <?php echo substr($pelicula['sinopsis'], 0, 100); ?>...</p>
+                            <p><strong>Duración:</strong> <?php echo $pelicula['duracion']; ?> min</p>
+                            <p><strong>Clasificación:</strong> <?php echo $pelicula['clasificacion']; ?></p>
+                            <p><strong>Estreno:</strong> <?php echo $pelicula['fecha_estreno']; ?></p>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
         </div>
 
         <!-- Sección Sedes -->
@@ -165,7 +191,7 @@ sqlsrv_close($conn);
     <footer>
         <p>© 2025 Zynemax+ | Todos los derechos reservados</p>
     </footer>
-    <script src="/scrip.js" defer></script>
+    <script src="/script.js" defer></script>
 </body>
 </html>
 <?php
