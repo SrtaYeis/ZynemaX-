@@ -19,6 +19,7 @@ if ($conn === false) {
     die("<pre>Conexión fallida: " . print_r(sqlsrv_errors(), true) . "</pre>");
 }
 
+
 // Procesar registro (solo cliente)
 if (isset($_POST['register'])) {
     $dni = isset($_POST['dni']) ? (int)$_POST['dni'] : null;
