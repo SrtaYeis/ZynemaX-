@@ -108,3 +108,35 @@ footer {
     bottom: 0;
     width: 100%;
 }
+
+.movie-item, .sede-item {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 1rem;
+    margin: 1rem 0;
+    border-radius: 5px;
+    border: 1px solid #ffd700;
+}
+
+.movie-item h3, .sede-item h3 {
+    margin: 0;
+    color: #ffd700;
+}
+
+.movie-item p, .sede-item p {
+    margin: 0.5rem 0;
+}
+
+.section form {
+    margin-top: 1rem;
+}
+
+select {
+    padding: 0.5rem;
+    margin: 0.5rem 0;
+    border-radius: 5px;
+    border: 1px solid #b22222;
+    background: #fff;
+    color: #333;
+    width: 100%;
+    max-width: 300px;
+}
