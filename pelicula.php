@@ -58,31 +58,22 @@ if (isset($_POST['select_movie'])) {
 if (isset($_POST['select_butaca'])) {
     $butaca_id = $_POST['butaca_id'];
     
-    // Validación 3: Verificar que el asiento esté disponible
-    $sql = "SELECT estado FROM Butaca WHERE id_butaca = ?";
+    // Validación 3: Verificar que el asiento exista (sin verificar estado)
+    $sql = "SELECT id_butaca FROM Butaca WHERE id_butaca = ?";
     $params = [$butaca_id];
     $stmt = sqlsrv_query($conn, $sql, $params);
     
     if ($stmt && $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-        if ($row['estado'] === 'disponible') {
-            $_SESSION['selected_butaca'] = $butaca_id;
-            // Marcar el asiento como ocupado
-            $sql = "UPDATE Butaca SET estado = 'ocupado' WHERE id_butaca = ?";
-            $stmt = sqlsrv_query($conn, $sql, [$butaca_id]);
-            if ($stmt === false) {
-                die("Error al actualizar el estado de la butaca: " . print_r(sqlsrv_errors(), true));
-            }
-            header("Location: pelicula.php?step=reserve");
-            exit();
-        } else {
-            echo "<p style='color:red;'>El asiento seleccionado ya está ocupado. Por favor, elija otro.</p>";
-            echo "<a href='pelicula.php?step=butaca'>Volver</a>";
-            sqlsrv_close($conn);
-            ob_end_flush();
-            exit();
-        }
+        $_SESSION['selected_butaca'] = $butaca_id;
+        // No marcamos el asiento como ocupado, ya que no estamos usando el campo estado
+        header("Location: pelicula.php?step=reserve");
+        exit();
     } else {
-        die("Error al verificar el estado de la butaca: " . print_r(sqlsrv_errors(), true));
+        echo "<p style='color:red;'>El asiento seleccionado no existe. Por favor, elija otro.</p>";
+        echo "<a href='pelicula.php?step=butaca'>Volver</a>";
+        sqlsrv_close($conn);
+        ob_end_flush();
+        exit();
     }
     sqlsrv_free_stmt($stmt);
 }
@@ -237,7 +228,7 @@ if (isset($_POST['process_payment'])) {
 
                 $sql = "SELECT id_butaca, fila, numero_butaca 
                         FROM Butaca 
-                        WHERE id_sala = ? AND estado = 'disponible'";
+                        WHERE id_sala = ?";
                 $params = [$_SESSION['selected_sala']];
                 $stmt = sqlsrv_query($conn, $sql, $params);
                 if ($stmt === false) {
@@ -252,7 +243,7 @@ if (isset($_POST['process_payment'])) {
                             echo "</form>";
                         }
                     } else {
-                        echo "<p style='color:red;'>No hay asientos disponibles en esta sala.</p>";
+                        echo "<p style='color:red;'>No hay asientos registrados en esta sala.</p>";
                         echo "<a href='pelicula.php'>Volver a seleccionar película</a>";
                     }
                     sqlsrv_free_stmt($stmt);
