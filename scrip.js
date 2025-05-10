@@ -19,105 +19,58 @@ function showForm(formType) {
     }
 }
 
-function updateSede() {
-    const funcionSelect = document.getElementById('funcion_id');
+function updateSedeAndButacas(funcionId) {
     const sedeSelect = document.getElementById('sede_id');
-    const salaSelect = document.getElementById('sala_id');
     const butacaSelect = document.getElementById('butaca_id');
+    const funcionSelect = document.getElementById('funcion_id');
 
     // Limpiar los selects dependientes
     sedeSelect.innerHTML = '<option value="">Seleccione una sede</option>';
-    salaSelect.innerHTML = '<option value="">Seleccione una sala</option>';
     butacaSelect.innerHTML = '<option value="">Seleccione una butaca</option>';
 
-    if (funcionSelect.value) {
+    if (funcionId) {
         const selectedOption = funcionSelect.options[funcionSelect.selectedIndex];
         const salaId = selectedOption.getAttribute('data-sala-id');
 
-        fetch(`/get_sede_from_sala.php?sala_id=${salaId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    console.error('Error al obtener la sede:', data.error);
-                    return;
+        // Obtener la sede basada en la sala
+        fetch(`?funcion_id=${funcionId}&sala_id=${salaId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error en la solicitud: ' + response.statusText);
                 }
-                // Seleccionar automáticamente la sede correspondiente
-                Array.from(sedeSelect.options).forEach(option => {
-                    if (option.value == data.id_sede) {
-                        option.selected = true;
+                return response.text(); // Obtener la página completa para procesar
+            })
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newSedeSelect = doc.getElementById('sede_id');
+                const newButacaSelect = doc.getElementById('butaca_id');
+
+                if (newSedeSelect && newButacaSelect) {
+                    sedeSelect.innerHTML = newSedeSelect.innerHTML;
+                    butacaSelect.innerHTML = newButacaSelect.innerHTML;
+
+                    // Seleccionar la sede automáticamente si hay una pre-seleccionada
+                    const selectedSede = newSedeSelect.value;
+                    if (selectedSede) {
+                        Array.from(sedeSelect.options).forEach(option => {
+                            if (option.value == selectedSede) {
+                                option.selected = true;
+                            }
+                        });
                     }
-                });
-                updateSalas(); // Actualizar las salas
-            })
-            .catch(error => console.error('Error al obtener la sede:', error));
-    }
-}
-
-function updateSalas() {
-    const sedeId = document.getElementById('sede_id').value;
-    const salaSelect = document.getElementById('sala_id');
-    const butacaSelect = document.getElementById('butaca_id');
-    salaSelect.innerHTML = '<option value="">Seleccione una sala</option>';
-    butacaSelect.innerHTML = '<option value="">Seleccione una butaca</option>';
-
-    if (sedeId) {
-        fetch(`/get_salas.php?sede_id=${sedeId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    console.error('Error al obtener las salas:', data.error);
-                    return;
+                } else {
+                    console.error('No se encontraron los elementos sede o butaca en la respuesta.');
                 }
-                data.forEach(sala => {
-                    const option = document.createElement('option');
-                    option.value = sala.id_sala;
-                    option.textContent = sala.nombre_sala;
-                    salaSelect.appendChild(option);
-                });
-
-                // Seleccionar automáticamente la sala de la función
-                const funcionSelect = document.getElementById('funcion_id');
-                const selectedOption = funcionSelect.options[funcionSelect.selectedIndex];
-                const salaId = selectedOption.getAttribute('data-sala-id');
-                Array.from(salaSelect.options).forEach(option => {
-                    if (option.value == salaId) {
-                        option.selected = true;
-                    }
-                });
-                updateButacas(); // Actualizar las butacas
             })
-            .catch(error => console.error('Error al obtener las salas:', error));
+            .catch(error => console.error('Error al actualizar sede y butacas:', error));
     }
 }
 
-function updateButacas() {
-    const salaId = document.getElementById('sala_id').value;
-    const butacaSelect = document.getElementById('butaca_id');
-    butacaSelect.innerHTML = '<option value="">Seleccione una butaca</option>';
-
-    if (salaId) {
-        fetch(`/get_butacas.php?sala_id=${salaId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    console.error('Error al obtener las butacas:', data.error);
-                    return;
-                }
-                data.forEach(butaca => {
-                    const option = document.createElement('option');
-                    option.value = butaca.id_butaca;
-                    option.textContent = `Fila ${butaca.fila}, Número ${butaca.numero_butaca}`;
-                    butacaSelect.appendChild(option);
-                });
-            })
-            .catch(error => console.error('Error al obtener las butacas:', error));
-    }
-}
-
-// Llamar a updateSede al cargar la página si ya hay una función seleccionada
+// Llamar a updateSedeAndButacas al cargar la página si ya hay una función seleccionada
 document.addEventListener('DOMContentLoaded', () => {
     const funcionSelect = document.getElementById('funcion_id');
     if (funcionSelect && funcionSelect.value) {
-        updateSede();
+        updateSedeAndButacas(funcionSelect.value);
     }
 });
