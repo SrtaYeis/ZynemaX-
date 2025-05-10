@@ -38,19 +38,6 @@ nav a:hover {
     margin: 2rem auto;
     padding: 0 1rem;
 }
-.section {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 2rem;
-    margin-bottom: 2rem;
-    border-radius: 10px;
-    backdrop-filter: blur(5px);
-    border: 1px solid #b22222;
-}
-.section h2 {
-    color: #ffd700;
-    border-bottom: 2px solid #b22222;
-    padding-bottom: 0.5rem;
-}
 .auth-section {
     text-align: center;
     margin-bottom: 2rem;
@@ -67,6 +54,10 @@ nav a:hover {
 .form-container h2 {
     color: #b22222;
     margin-bottom: 1rem;
+}
+.form-container p {
+    margin: 0.5rem 0;
+    font-size: 1rem;
 }
 input, select, textarea {
     width: 100%;
@@ -106,44 +97,4 @@ footer {
     position: fixed;
     bottom: 0;
     width: 100%;
-}
-
-/* Estilos para la cartelera */
-.movie-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-top: 1rem;
-}
-.movie-card {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    overflow: hidden;
-    border: 1px solid #b22222;
-    transition: transform 0.2s;
-}
-.movie-card:hover {
-    transform: scale(1.05);
-}
-.movie-image {
-    width: 100%;
-    height: 300px;
-    background: #333;
-    overflow: hidden;
-}
-.movie-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-.movie-info {
-    padding: 1rem;
-}
-.movie-info h3 {
-    color: #ffd700;
-    margin: 0 0 0.5rem;
-}
-.movie-info p {
-    margin: 0.3rem 0;
-    color: #fff;
 }
