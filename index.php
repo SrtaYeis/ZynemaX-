@@ -1,4 +1,5 @@
 <?php
+ob_start(); // Iniciar el búfer de salida
 header("Content-Type: text/html; charset=UTF-8");
 session_start();
 
@@ -16,19 +17,15 @@ $conn = sqlsrv_connect($serverName, $connectionInfo);
 
 if ($conn === false) {
     die("<pre>Conexión fallida: " . print_r(sqlsrv_errors(), true) . "</pre>");
-} else {
-    echo "<!-- Conexión a la base de datos exitosa -->";
 }
 
 // Procesar registro (solo cliente)
 if (isset($_POST['register'])) {
-    echo "<!-- Datos recibidos del formulario: " . print_r($_POST, true) . " -->";
-
     $dni = isset($_POST['dni']) ? (int)$_POST['dni'] : null;
     $nombre = isset($_POST['nombre']) ? substr($_POST['nombre'], 0, 50) : null;
     $email = isset($_POST['email']) ? substr($_POST['email'], 0, 50) : null;
     $contrasena = isset($_POST['contrasena']) ? password_hash($_POST['contrasena'], PASSWORD_DEFAULT) : null;
-    $tipo_usuario = 'cliente'; // Fijo como cliente
+    $tipo_usuario = 'cliente';
 
     if ($dni && $nombre && $email && $contrasena) {
         $sql = "INSERT INTO Usuario (dni, nombre, email, contrasena, tipo_usuario) VALUES (?, ?, ?, ?, ?)";
@@ -36,14 +33,16 @@ if (isset($_POST['register'])) {
         $stmt = sqlsrv_query($conn, $sql, $params);
 
         if ($stmt === false) {
-            echo "<script>alert('Error al registrarse: " . print_r(sqlsrv_errors(), true) . "');</script>";
+            header("Location: index.php?error=1");
+            exit();
         } else {
-            header("Location: index.php");
+            header("Location: index.php?register_success=1");
             exit();
         }
         sqlsrv_free_stmt($stmt);
     } else {
-        echo "<script>alert('Faltan datos en el formulario.');</script>";
+        header("Location: index.php?error=2");
+        exit();
     }
 }
 
@@ -63,18 +62,32 @@ if (isset($_POST['login'])) {
                 $_SESSION['dni'] = $row['dni'];
                 $_SESSION['nombre'] = $row['nombre'];
                 $_SESSION['tipo_usuario'] = $row['tipo_usuario'];
-                header("Location: index.php");
+                header("Location: index.php?login_success=1");
                 exit();
             } else {
-                echo "<script>alert('Contraseña incorrecta.');</script>";
+                header("Location: index.php?error=3");
+                exit();
             }
         } else {
-            echo "<script>alert('Usuario no encontrado.');</script>";
+            header("Location: index.php?error=4");
+            exit();
         }
         sqlsrv_free_stmt($stmt);
     } else {
-        echo "<script>alert('Faltan datos para iniciar sesión.');</script>";
+        header("Location: index.php?error=5");
+        exit();
     }
+}
+
+// Obtener películas para la cartelera
+$peliculas = [];
+$sql = "SELECT id_pelicula, titulo, sinopsis, duracion, clasificacion, fecha_estreno FROM Pelicula";
+$stmt = sqlsrv_query($conn, $sql);
+if ($stmt) {
+    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+        $peliculas[] = $row;
+    }
+    sqlsrv_free_stmt($stmt);
 }
 
 sqlsrv_close($conn);
@@ -106,6 +119,17 @@ sqlsrv_close($conn);
         <!-- Formularios de Login y Registro -->
         <?php if (!isset($_SESSION['dni'])): ?>
             <div class="auth-section">
+                <?php
+                $error = isset($_GET['error']) ? $_GET['error'] : 0;
+                $register_success = isset($_GET['register_success']) ? true : false;
+                $login_success = isset($_GET['login_success']) ? true : false;
+                if ($error == 1) echo "<p style='color:red;'>Error al registrarse. Verifica los datos.</p>";
+                if ($error == 2) echo "<p style='color:red;'>Faltan datos en el formulario.</p>";
+                if ($error == 3) echo "<p style='color:red;'>Contraseña incorrecta.</p>";
+                if ($error == 4) echo "<p style='color:red;'>Usuario no encontrado.</p>";
+                if ($error == 5) echo "<p style='color:red;'>Faltan datos para iniciar sesión.</p>";
+                if ($register_success) echo "<p style='color:green;'>Registro exitoso. Por favor inicia sesión.</p>";
+                ?>
                 <div id="login-form" class="form-container" style="display: none;">
                     <h2>Iniciar Sesión</h2>
                     <form method="POST">
@@ -127,15 +151,35 @@ sqlsrv_close($conn);
             </div>
         <?php else: ?>
             <div class="welcome-message">
-                <h2>Bienvenido, <?php echo $_SESSION['nombre']; ?> (<?php echo $_SESSION['tipo_usuario']; ?>)</h2>
-                <p>Explora la cartelera y reserva tus entradas.</p>
+                <?php if (isset($_GET['login_success'])): ?>
+                    <h2>Bienvenido, <?php echo $_SESSION['nombre']; ?> (<?php echo $_SESSION['tipo_usuario']; ?>)</h2>
+                    <p>Explora la cartelera y reserva tus entradas.</p>
+                <?php else: ?>
+                    <h2>Bienvenido, <?php echo $_SESSION['nombre']; ?> (<?php echo $_SESSION['tipo_usuario']; ?>)</h2>
+                    <p>Explora la cartelera y reserva tus entradas.</p>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
 
         <!-- Sección Cartelera -->
         <div class="section" id="cartelera">
             <h2>Cartelera</h2>
-            <p>Próximamente: Lista de películas disponibles.</p>
+            <div class="movie-grid">
+                <?php foreach ($peliculas as $pelicula): ?>
+                    <div class="movie-card">
+                        <div class="movie-image">
+                            <img src="/images/<?php echo $pelicula['id_pelicula']; ?>.jpg" alt="<?php echo $pelicula['titulo']; ?> Portada" onerror="this.src='/images/placeholder.jpg';">
+                        </div>
+                        <div class="movie-info">
+                            <h3><?php echo $pelicula['titulo']; ?></h3>
+                            <p><strong>Sinopsis:</strong> <?php echo substr($pelicula['sinopsis'], 0, 100); ?>...</p>
+                            <p><strong>Duración:</strong> <?php echo $pelicula['duracion']; ?> min</p>
+                            <p><strong>Clasificación:</strong> <?php echo $pelicula['clasificacion']; ?></p>
+                            <p><strong>Estreno:</strong> <?php echo $pelicula['fecha_estreno']; ?></p>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
         </div>
 
         <!-- Sección Sedes -->
@@ -150,3 +194,6 @@ sqlsrv_close($conn);
     <script src="/script.js" defer></script>
 </body>
 </html>
+<?php
+ob_end_flush(); // Finalizar el búfer de salida
+?>
