@@ -458,8 +458,8 @@ if (isset($_POST['confirm_purchase'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zynemax+ | Películas</title>
-    <link rel="stylesheet" href="styles.css"> <!-- Enlace al CSS que usas normalmente -->
-    <script src="scrip.js" defer></script> <!-- Enlace a tu archivo JavaScript -->
+    <link rel="stylesheet" href="style.css">
+    <script src="scrip.js" defer></script>
 </head>
 <body>
     <header>
