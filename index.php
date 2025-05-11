@@ -2,7 +2,6 @@
 ob_start(); // Iniciar el búfer de salida
 header("Content-Type: text/html; charset=UTF-8");
 session_start();
-
 // Conexión a la base de datos
 $serverName = "database-zynemaxplus-server.database.windows.net";
 $connectionInfo = [
@@ -12,13 +11,11 @@ $connectionInfo = [
     "Encrypt" => true,
     "TrustServerCertificate" => false
 ];
-
 $conn = sqlsrv_connect($serverName, $connectionInfo);
 
 if ($conn === false) {
     die("<pre>Conexión fallida: " . print_r(sqlsrv_errors(), true) . "</pre>");
 }
-
 // Procesar registro (solo cliente)
 if (isset($_POST['register'])) {
     $dni = isset($_POST['dni']) ? (int)$_POST['dni'] : null;
@@ -40,63 +37,19 @@ if (isset($_POST['register'])) {
             exit();
         }
         sqlsrv_free_stmt($stmt);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     } else {
         header("Location: index.php?error=2");
-
-
-
         exit();
     }
-
 }
-
 // Procesar login
 if (isset($_POST['login'])) {
     $dni = isset($_POST['dni']) ? (int)$_POST['dni'] : null;
     $contrasena = isset($_POST['contrasena']) ? $_POST['contrasena'] : null;
-
-
-
-
-
-
     if ($dni && $contrasena) {
         $sql = "SELECT dni, nombre, email, contrasena, tipo_usuario FROM Usuario WHERE dni = ?";
         $params = [$dni];
         $stmt = sqlsrv_query($conn, $sql, $params);
-
-
         if ($stmt && sqlsrv_has_rows($stmt)) {
             $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
             if (password_verify($contrasena, $row['contrasena'])) {
@@ -112,139 +65,15 @@ if (isset($_POST['login'])) {
             }
         } else {
             echo "<script>window.location.href = 'index.php?error=4';</script>";
-
-
-
-            exit();
+           exit();
         }
         sqlsrv_free_stmt($stmt);
     } else {
         echo "<script>window.location.href = 'index.php?error=5';</script>";
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         exit();
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
-
 sqlsrv_close($conn);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ?>
 
 <!DOCTYPE html>
@@ -272,16 +101,6 @@ sqlsrv_close($conn);
     <div class="container">
         <?php if (!isset($_SESSION['dni'])): ?>
             <div class="auth-section">
-
-
-
-
-
-
-
-
-
-
                 <?php
                 $error = isset($_GET['error']) ? $_GET['error'] : 0;
                 $register_success = isset($_GET['register_success']) ? true : false;
@@ -293,20 +112,6 @@ sqlsrv_close($conn);
                 if ($error == 5) echo "<p style='color:red;'>Faltan datos para iniciar sesión.</p>";
                 if ($error == 6) echo "<p style='color:red;'>Debes iniciar sesión para ver las películas.</p>";
                 if ($register_success) echo "<p style='color:green;'>Registro exitoso. Por favor inicia sesión.</p>";
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 ?>
                 <div id="login-form" class="form-container" style="display: none;">
                     <h2>Iniciar Sesión</h2>
@@ -335,34 +140,7 @@ sqlsrv_close($conn);
                     <h2>Bienvenido, <?php echo $_SESSION['nombre']; ?> (<?php echo $_SESSION['tipo_usuario']; ?>)</h2>
                 <?php endif; ?>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             </div>
-
-
             <!-- Sección de Perfil -->
             <div id="profile-form" class="form-container" style="display: none;">
                 <h2>Perfil de Usuario</h2>
@@ -371,137 +149,6 @@ sqlsrv_close($conn);
                 <p><strong>Email:</strong> <?php echo $_SESSION['email']; ?></p>
                 <p><strong>Tipo de Usuario:</strong> <?php echo $_SESSION['tipo_usuario']; ?></p>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             </div>
         <?php endif; ?>
     </div>
@@ -509,7 +156,6 @@ sqlsrv_close($conn);
         <p>© 2025 Zynemax+ | Todos los derechos reservados</p>
     </footer>
     <script src="/scrip.js" defer></script>
-
 </body>
 </html>
 <?php
