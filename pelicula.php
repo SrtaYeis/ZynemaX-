@@ -213,9 +213,9 @@ if (isset($_POST['confirm_purchase'])) {
     $monto_pago = $row['precio'];
     sqlsrv_free_stmt($stmt);
 
-    // Insertar en la tabla Pago con metodo_pago como NULL inicialmente
-    $sql = "INSERT INTO Pago (id_reserva_funcion, metodo_pago, fecha_pago, estado_pago) VALUES (?, NULL, ?, ?)";
-    $params = [$id_reserva_funcion, date('Y-m-d H:i:s'), 'pendiente'];
+    // Insertar en la tabla Pago con metodo_pago como 'pendiente' inicialmente
+    $sql = "INSERT INTO Pago (id_reserva_funcion, metodo_pago, fecha_pago, estado_pago) VALUES (?, ?, ?, ?)";
+    $params = [$id_reserva_funcion, 'pendiente', date('Y-m-d H:i:s'), 'pendiente'];
     $stmt = sqlsrv_query($conn, $sql, $params);
 
     if ($stmt === false) {
@@ -234,15 +234,25 @@ if (isset($_POST['confirm_purchase'])) {
     $id_pago = $row['id_pago'];
     sqlsrv_free_stmt($stmt);
 
+    // Guardar en la sesión
     $_SESSION['id_pago'] = $id_pago;
     $_SESSION['monto_pago'] = $monto_pago;
+
+    // Depuración: Verificar si las variables de sesión están configuradas
+    error_log("Después de confirm_purchase - id_pago: " . $id_pago . ", monto_pago: " . $monto_pago);
+
+    // Redirigir al paso de pago
     header("Location: pelicula.php?step=payment");
     exit();
 }
 
 // Procesar simulación de pago y mostrar comprobante
 if (isset($_POST['simulate_payment'])) {
+    // Depuración: Verificar si llegamos a este bloque
+    error_log("Iniciando simulación de pago");
+
     if (!isset($_SESSION['id_pago']) || !isset($_SESSION['monto_pago'])) {
+        error_log("Faltan datos de sesión - id_pago: " . (isset($_SESSION['id_pago']) ? $_SESSION['id_pago'] : 'No definido') . ", monto_pago: " . (isset($_SESSION['monto_pago']) ? $_SESSION['monto_pago'] : 'No definido'));
         echo "<p style='color:red;'>Error: No se encontró un pago para procesar la simulación.</p>";
         echo "<a href='pelicula.php'>Volver</a>";
         sqlsrv_close($conn);
@@ -252,7 +262,17 @@ if (isset($_POST['simulate_payment'])) {
 
     $id_pago = $_SESSION['id_pago'];
     $monto_pago = $_SESSION['monto_pago'];
-    $metodo_pago = isset($_POST['payment_method']) ? $_POST['payment_method'] : 'pendiente';
+    $metodo_pago = isset($_POST['payment_method']) ? $_POST['payment_method'] : null;
+
+    // Validar el método de pago
+    if (!in_array($metodo_pago, ['efectivo', 'tarjeta', 'transferencia'])) {
+        error_log("Método de pago no válido: " . $metodo_pago);
+        echo "<p style='color:red;'>Error: Método de pago no válido.</p>";
+        echo "<a href='pelicula.php?step=payment'>Volver</a>";
+        sqlsrv_close($conn);
+        ob_end_flush();
+        exit();
+    }
 
     // Actualizar el estado del pago
     $sql = "UPDATE Pago SET metodo_pago = ?, estado_pago = ?, fecha_pago = ? WHERE id_pago = ?";
@@ -317,7 +337,7 @@ if (isset($_POST['simulate_payment'])) {
         echo "<p><strong>Butaca:</strong> Fila " . htmlspecialchars($row['fila']) . ", Número " . htmlspecialchars($row['numero_butaca']) . "</p>";
         echo "<p><strong>Fecha y Hora de la Función:</strong> " . $row['fecha_funcion']->format('Y-m-d H:i:s') . "</p>";
         echo "<p><strong>Monto Pagado:</strong> $" . number_format($row['monto'], 2) . "</p>";
-        echo "<p><strong>Método de Pago:</strong> " . htmlspecialchars($metodo_pago) . "</p>";
+        echo "<p><strong>Método de Pago:</strong> " . htmlspecialchars(ucfirst($metodo_pago)) . "</p>";
         echo "<p><strong>Fecha de Pago:</strong> " . date('Y-m-d H:i:s') . "</p>";
     } else {
         echo "<p style='color:red;'>Error: No se encontraron datos para el comprobante.</p>";
@@ -622,9 +642,9 @@ if (isset($_POST['simulate_payment'])) {
                 <p>Selecciona cómo deseas pagar tu entrada:</p>
                 <form method="POST">
                     <div style="margin-bottom: 15px;">
-                        <label><input type="radio" name="payment_method" value="Efectivo" required> Efectivo</label><br>
-                        <label><input type="radio" name="payment_method" value="Tarjeta"> Tarjeta</label><br>
-                        <label><input type="radio" name="payment_method" value="QR"> QR</label>
+                        <label><input type="radio" name="payment_method" value="efectivo" required> Efectivo</label><br>
+                        <label><input type="radio" name="payment_method" value="tarjeta"> Tarjeta</label><br>
+                        <label><input type="radio" name="payment_method" value="transferencia"> Transferencia</label>
                     </div>
                     <button type="submit" name="simulate_payment" style="background-color: #b22222; color: white; padding: 10px 20px; border: none; cursor: pointer;">Pagar</button>
                 </form>
