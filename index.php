@@ -16,6 +16,7 @@ $connectionInfo = [
 $conn = sqlsrv_connect($serverName, $connectionInfo);
 
 if ($conn === false) {
+    error_log("Conexión fallida: " . print_r(sqlsrv_errors(), true));
     die("<pre>Conexión fallida: " . print_r(sqlsrv_errors(), true) . "</pre>");
 }
 
@@ -33,6 +34,7 @@ if (isset($_POST['register'])) {
         $stmt = sqlsrv_query($conn, $sql, $params);
 
         if ($stmt === false) {
+            error_log("Error al registrarse: " . print_r(sqlsrv_errors(), true));
             header("Location: index.php?error=1");
             exit();
         } else {
@@ -56,20 +58,28 @@ if (isset($_POST['login'])) {
         $params = [$dni];
         $stmt = sqlsrv_query($conn, $sql, $params);
 
-        if ($stmt && sqlsrv_has_rows($stmt)) {
+        if ($stmt === false) {
+            error_log("Error en la consulta de login: " . print_r(sqlsrv_errors(), true));
+            header("Location: index.php?error=4");
+            exit();
+        }
+
+        if (sqlsrv_has_rows($stmt)) {
             $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
             if (password_verify($contrasena, $row['contrasena'])) {
                 $_SESSION['dni'] = $row['dni'];
                 $_SESSION['nombre'] = $row['nombre'];
                 $_SESSION['email'] = $row['email'];
                 $_SESSION['tipo_usuario'] = $row['tipo_usuario'];
-                header("Location: index.php?login_success=1");
+                header("Location: pelicula.php"); // Redirección directa a pelicula.php
                 exit();
             } else {
+                error_log("Contraseña incorrecta para DNI: $dni");
                 header("Location: index.php?error=3");
                 exit();
             }
         } else {
+            error_log("Usuario no encontrado para DNI: $dni");
             header("Location: index.php?error=4");
             exit();
         }
@@ -100,7 +110,8 @@ sqlsrv_close($conn);
             <a href="#" onclick="showForm('login')">Login</a>
             <a href="#" onclick="showForm('register')">Register</a>
         <?php else: ?>
-            <a href="#" onclick="showForm('profile')">Perfil (<?php echo $_SESSION['nombre']; ?>)</a>
+            <a href="#" onclick="showForm('profile')">Perfil (<?php echo htmlspecialchars($_SESSION['nombre']); ?>)</a>
+            <a href="/pelicula.php">Películas</a> <!-- Enlace a pelicula.php -->
             <a href="/logout.php">Logout</a>
         <?php endif; ?>
     </nav>
@@ -109,9 +120,8 @@ sqlsrv_close($conn);
         <?php if (!isset($_SESSION['dni'])): ?>
             <div class="auth-section">
                 <?php
-                $error = isset($_GET['error']) ? $_GET['error'] : 0;
+                $error = isset($_GET['error']) ? (int)$_GET['error'] : 0;
                 $register_success = isset($_GET['register_success']) ? true : false;
-                $login_success = isset($_GET['login_success']) ? true : false;
                 if ($error == 1) echo "<p style='color:red;'>Error al registrarse. Verifica los datos.</p>";
                 if ($error == 2) echo "<p style='color:red;'>Faltan datos en el formulario.</p>";
                 if ($error == 3) echo "<p style='color:red;'>Contraseña incorrecta.</p>";
@@ -141,20 +151,18 @@ sqlsrv_close($conn);
         <?php else: ?>
             <!-- Mensaje de bienvenida -->
             <div class="welcome-message">
-                <?php if (isset($_GET['login_success'])): ?>
-                    <h2>Bienvenido, <?php echo $_SESSION['nombre']; ?> (<?php echo $_SESSION['tipo_usuario']; ?>)</h2>
-                <?php else: ?>
-                    <h2>Bienvenido, <?php echo $_SESSION['nombre']; ?> (<?php echo $_SESSION['tipo_usuario']; ?>)</h2>
-                <?php endif; ?>
+                <h2>Bienvenido, <?php echo htmlspecialchars($_SESSION['nombre']); ?> (<?php echo htmlspecialchars($_SESSION['tipo_usuario']); ?>)</h2>
+                <p>¡Ya puedes acceder a las películas!</p>
+                <a href="/pelicula.php" class="btn">Ir a Películas</a> <!-- Botón para redirigir manualmente -->
             </div>
 
             <!-- Sección de Perfil -->
             <div id="profile-form" class="form-container" style="display: none;">
                 <h2>Perfil de Usuario</h2>
-                <p><strong>DNI:</strong> <?php echo $_SESSION['dni']; ?></p>
-                <p><strong>Nombre:</strong> <?php echo $_SESSION['nombre']; ?></p>
-                <p><strong>Email:</strong> <?php echo $_SESSION['email']; ?></p>
-                <p><strong>Tipo de Usuario:</strong> <?php echo $_SESSION['tipo_usuario']; ?></p>
+                <p><strong>DNI:</strong> <?php echo htmlspecialchars($_SESSION['dni']); ?></p>
+                <p><strong>Nombre:</strong> <?php echo htmlspecialchars($_SESSION['nombre']); ?></p>
+                <p><strong>Email:</strong> <?php echo htmlspecialchars($_SESSION['email']); ?></p>
+                <p><strong>Tipo de Usuario:</strong> <?php echo htmlspecialchars($_SESSION['tipo_usuario']); ?></p>
             </div>
         <?php endif; ?>
     </div>
@@ -162,8 +170,23 @@ sqlsrv_close($conn);
         <p>© 2025 Zynemax+ | Todos los derechos reservados</p>
     </footer>
     <script src="/scrip.js" defer></script>
+    <style>
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </body>
 </html>
 <?php
+sqlsrv_close($conn);
 ob_end_flush(); // Finalizar el búfer de salida
 ?>
