@@ -3,6 +3,11 @@ ob_start(); // Iniciar el búfer de salida
 header("Content-Type: text/html; charset=UTF-8");
 session_start();
 
+// Depuración: Verificar el estado de la sesión
+echo "<pre>Estado de la sesión en pelicula.php:\n";
+var_dump($_SESSION);
+echo "</pre>";
+
 // Conexión a la base de datos
 $serverName = "database-zynemaxplus-server.database.windows.net";
 $connectionInfo = [
@@ -43,7 +48,7 @@ if (!isset($_SESSION['dni'])) {
     exit();
 }
 
-// Procesar selección de película
+// Resto del código de pelicula.php (sin cambios)
 if (isset($_POST['select_movie'])) {
     $movie_id = isset($_POST['movie_id']) ? (int)$_POST['movie_id'] : null;
     if ($movie_id) {
@@ -57,7 +62,6 @@ if (isset($_POST['select_movie'])) {
     }
 }
 
-// Procesar selección de sede
 if (isset($_POST['select_sede'])) {
     $sede_id = isset($_POST['sede_id']) ? (int)$_POST['sede_id'] : null;
     if ($sede_id) {
@@ -71,7 +75,6 @@ if (isset($_POST['select_sede'])) {
     }
 }
 
-// Procesar selección de sala
 if (isset($_POST['select_sala'])) {
     $sala_id = isset($_POST['sala_id']) ? (int)$_POST['sala_id'] : null;
     $funcion_id = isset($_POST['funcion_id']) ? (int)$_POST['funcion_id'] : null;
@@ -89,7 +92,6 @@ if (isset($_POST['select_sala'])) {
     }
 }
 
-// Procesar selección de butaca
 if (isset($_POST['select_butaca'])) {
     $butaca_id = isset($_POST['butaca_id']) ? (int)$_POST['butaca_id'] : null;
     if ($butaca_id && isset($_SESSION['selected_sala'])) {
@@ -125,7 +127,6 @@ if (isset($_POST['select_butaca'])) {
     }
 }
 
-// Procesar confirmación de compra
 if (isset($_POST['confirm_purchase'])) {
     if (!isset($_SESSION['selected_movie']) || !isset($_SESSION['selected_sede']) || !isset($_SESSION['selected_sala']) || !isset($_SESSION['selected_butaca']) || !isset($_SESSION['function_id'])) {
         echo "<p style='color:red;'>Error: Faltan datos para completar la compra.</p>";
@@ -141,7 +142,6 @@ if (isset($_POST['confirm_purchase'])) {
     $sala_id = $_SESSION['selected_sala'];
     $funcion_id = $_SESSION['function_id'];
 
-    // Insertar en Reserva
     $sql = "INSERT INTO Reserva (dni_usuario, fecha_reserva) VALUES (?, ?)";
     $params = [$dni_usuario, $fecha_reserva];
     $stmt = sqlsrv_query($conn, $sql, $params);
@@ -161,7 +161,6 @@ if (isset($_POST['confirm_purchase'])) {
     $id_reserva = $row['id_reserva'];
     sqlsrv_free_stmt($stmt);
 
-    // Vincular la reserva con la función
     $sql = "INSERT INTO Reserva_funcion (id_reserva, id_funcion) VALUES (?, ?)";
     $params = [$id_reserva, $funcion_id];
     $stmt = sqlsrv_query($conn, $sql, $params);
@@ -181,7 +180,6 @@ if (isset($_POST['confirm_purchase'])) {
     $id_reserva_funcion = $row['id_reserva_funcion'];
     sqlsrv_free_stmt($stmt);
 
-    // Vincular la reserva con la butaca
     $sql = "INSERT INTO Reserva_butaca (id_reserva_funcion, id_butaca) VALUES (?, ?)";
     $params = [$id_reserva_funcion, $_SESSION['selected_butaca']];
     $stmt = sqlsrv_query($conn, $sql, $params);
@@ -196,7 +194,6 @@ if (isset($_POST['confirm_purchase'])) {
     }
     sqlsrv_free_stmt($stmt);
 
-    // Obtener el precio de la película
     $sql = "SELECT precio FROM Pelicula WHERE id_pelicula = ?";
     $params = [$_SESSION['selected_movie']];
     $stmt = sqlsrv_query($conn, $sql, $params);
@@ -214,7 +211,6 @@ if (isset($_POST['confirm_purchase'])) {
     $monto_pago = $row['precio'];
     sqlsrv_free_stmt($stmt);
 
-    // Insertar en Pago
     $sql = "INSERT INTO Pago (id_reserva_funcion, metodo_pago, fecha_pago, estado_pago) VALUES (?, ?, ?, ?)";
     $params = [$id_reserva_funcion, 'tarjeta', date('Y-m-d H:i:s'), 'pendiente'];
     $stmt = sqlsrv_query($conn, $sql, $params);
@@ -240,7 +236,6 @@ if (isset($_POST['confirm_purchase'])) {
     exit();
 }
 
-// Procesar simulación de pago
 if (isset($_POST['simulate_payment'])) {
     if (!isset($_SESSION['id_pago']) || !isset($_SESSION['monto_pago'])) {
         echo "<p style='color:red;'>Error: No se encontró un pago para procesar la simulación.</p>";
@@ -268,7 +263,6 @@ if (isset($_POST['simulate_payment'])) {
     }
     sqlsrv_free_stmt($stmt);
 
-    // Limpiar sesiones
     unset($_SESSION['selected_movie']);
     unset($_SESSION['selected_sede']);
     unset($_SESSION['selected_sala']);
@@ -316,7 +310,6 @@ if (isset($_POST['simulate_payment'])) {
             <?php endif; ?>
         </div>
 
-        <!-- Sección de Películas -->
         <?php if (!isset($_GET['step']) || $_GET['step'] === 'movies'): ?>
             <div id="movies-form" class="form-container">
                 <h2>Selecciona una Película</h2>
@@ -349,7 +342,6 @@ if (isset($_POST['simulate_payment'])) {
             </div>
         <?php endif; ?>
 
-        <!-- Sección de Sedes -->
         <?php if (isset($_GET['step']) && $_GET['step'] === 'sede' && isset($_SESSION['selected_movie'])): ?>
             <div class="form-container">
                 <h2>Selecciona una Sede</h2>
@@ -383,7 +375,6 @@ if (isset($_POST['simulate_payment'])) {
             </div>
         <?php endif; ?>
 
-        <!-- Sección de Salas -->
         <?php if (isset($_GET['step']) && $_GET['step'] === 'sala' && isset($_SESSION['selected_sede']) && isset($_SESSION['selected_movie'])): ?>
             <div class="form-container">
                 <h2>Selecciona una Sala</h2>
@@ -418,7 +409,6 @@ if (isset($_POST['simulate_payment'])) {
             </div>
         <?php endif; ?>
 
-        <!-- Sección de Butacas -->
         <?php if (isset($_GET['step']) && $_GET['step'] === 'butaca' && isset($_SESSION['selected_sala'])): ?>
             <div class="form-container">
                 <h2>Selecciona una Butaca</h2>
@@ -452,7 +442,6 @@ if (isset($_POST['simulate_payment'])) {
             </div>
         <?php endif; ?>
 
-        <!-- Resumen de la compra -->
         <?php if (isset($_GET['step']) && $_GET['step'] === 'summary' && isset($_SESSION['selected_butaca'])): ?>
             <div class="form-container">
                 <h2>Resumen de tu Compra</h2>
@@ -518,7 +507,6 @@ if (isset($_POST['simulate_payment'])) {
             </div>
         <?php endif; ?>
 
-        <!-- Simulación de pago -->
         <?php if (isset($_GET['step']) && $_GET['step'] === 'payment' && isset($_SESSION['id_pago'])): ?>
             <div class="form-container">
                 <h2>Simular Pago</h2>
