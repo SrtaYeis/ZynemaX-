@@ -4,9 +4,9 @@ header("Content-Type: text/html; charset=UTF-8");
 session_start();
 
 // Depuración: Verificar el estado de la sesión
-echo "<pre>Estado de la sesión en index.php:\n";
-var_dump($_SESSION);
-echo "</pre>";
+// echo "<pre>Estado de la sesión en index.php:\n";
+// var_dump($_SESSION);
+// echo "</pre>";
 
 // Conexión a la base de datos
 $serverName = "database-zynemaxplus-server.database.windows.net";
@@ -77,9 +77,9 @@ if (isset($_POST['login'])) {
                 $_SESSION['email'] = $row['email'];
                 $_SESSION['tipo_usuario'] = $row['tipo_usuario'];
                 // Depuración: Confirmar que la sesión se configuró
-                echo "<pre>Sesión configurada:\n";
-                var_dump($_SESSION);
-                echo "</pre>";
+                // echo "<pre>Sesión configurada:\n";
+                // var_dump($_SESSION);
+                // echo "</pre>";
                 header("Location: pelicula.php");
                 exit();
             } else {
