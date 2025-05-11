@@ -11,7 +11,7 @@ session_start();
 // Conexión a la base de datos
 $serverName = "database-zynemaxplus-server.database.windows.net";
 $connectionInfo = [
-    "Database" => "database-zynemaxplus-server",
+    "Database" => "ZynemaxDB",
     "UID" => "zynemaxplus",
     "PWD" => "grupo2_1al10",
     "Encrypt" => true,
@@ -172,7 +172,7 @@ sqlsrv_close($conn);
     <footer>
         <p>© 2025 Zynemax+ | Todos los derechos reservados</p>
     </footer>
-    <script src="scrip.js" defer></script>
+    <script src="script.js" defer></script>
 </body>
 </html>
 <?php
