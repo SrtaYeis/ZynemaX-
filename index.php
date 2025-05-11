@@ -6,7 +6,7 @@ session_start();
 // Conexión a la base de datos
 $serverName = "database-zynemaxplus-server.database.windows.net";
 $connectionInfo = [
-    "Database" => "database-zynemaxplus-server", // Corrige el nombre de la base de datos (antes estaba mal)
+    "Database" => "ZynemaxDB",
     "UID" => "zynemaxplus",
     "PWD" => "grupo2_1al10",
     "Encrypt" => true,
@@ -16,6 +16,7 @@ $connectionInfo = [
 $conn = sqlsrv_connect($serverName, $connectionInfo);
 
 if ($conn === false) {
+    error_log("Conexión fallida: " . print_r(sqlsrv_errors(), true));
     die("<pre>Conexión fallida: " . print_r(sqlsrv_errors(), true) . "</pre>");
 }
 
@@ -39,6 +40,7 @@ if (isset($_POST['register'])) {
         $stmt = sqlsrv_query($conn, $sql, $params);
 
         if ($stmt === false) {
+            error_log("Error al registrarse: " . print_r(sqlsrv_errors(), true));
             header("Location: index.php?error=1");
             exit();
         } else {
@@ -62,7 +64,13 @@ if (isset($_POST['login'])) {
         $params = [$dni];
         $stmt = sqlsrv_query($conn, $sql, $params);
 
-        if ($stmt && sqlsrv_has_rows($stmt)) {
+        if ($stmt === false) {
+            error_log("Error en la consulta de login: " . print_r(sqlsrv_errors(), true));
+            header("Location: index.php?error=4");
+            exit();
+        }
+
+        if (sqlsrv_has_rows($stmt)) {
             $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
             if (password_verify($contrasena, $row['contrasena'])) {
                 // Login exitoso, establecer variables de sesión y redirigir a pelicula.php
@@ -70,13 +78,15 @@ if (isset($_POST['login'])) {
                 $_SESSION['nombre'] = $row['nombre'];
                 $_SESSION['email'] = $row['email'];
                 $_SESSION['tipo_usuario'] = $row['tipo_usuario'];
-                header("Location: pelicula.php"); // Redirigir a pelicula.php en lugar de recargar index.php
+                header("Location: pelicula.php");
                 exit();
             } else {
+                error_log("Contraseña incorrecta para DNI: $dni");
                 header("Location: index.php?error=3");
                 exit();
             }
         } else {
+            error_log("Usuario no encontrado para DNI: $dni");
             header("Location: index.php?error=4");
             exit();
         }
