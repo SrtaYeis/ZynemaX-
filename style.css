@@ -147,3 +147,15 @@ footer {
     margin: 0.3rem 0;
     color: #fff;
 }
+
+///WA
+.form-container hr {
+    border: 1px solid #b22222;
+    margin: 1rem 0;
+}
+
+.form-container h3 {
+    color: #b22222;
+    text-align: center;
+    margin-bottom: 1rem;
+}
