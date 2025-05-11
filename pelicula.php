@@ -4,9 +4,9 @@ header("Content-Type: text/html; charset=UTF-8");
 session_start();
 
 // Depuración: Verificar el estado de la sesión
-echo "<pre>Estado de la sesión en pelicula.php:\n";
-var_dump($_SESSION);
-echo "</pre>";
+// echo "<pre>Estado de la sesión en pelicula.php:\n";
+// var_dump($_SESSION);
+// echo "</pre>";
 
 // Conexión a la base de datos
 $serverName = "database-zynemaxplus-server.database.windows.net";
