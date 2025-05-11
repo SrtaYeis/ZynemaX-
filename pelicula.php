@@ -322,14 +322,56 @@ if (isset($_POST['confirm_purchase'])) {
         exit();
     }
 
+    // Verificar si la inserción fue exitosa
+    $rows_affected = sqlsrv_rows_affected($stmt);
+    error_log("Filas afectadas al insertar en Pago: " . $rows_affected);
+    if ($rows_affected <= 0) {
+        error_log("No se insertó ninguna fila en Pago");
+        echo "<div class='form-container'><p style='color:red;'>Error: No se pudo insertar en Pago.</p><a href='pelicula.php'>Volver</a></div>";
+        sqlsrv_close($conn);
+        ob_end_flush();
+        exit();
+    }
+
     // Obtener el ID del pago recién creado
     $sql = "SELECT SCOPE_IDENTITY() AS id_pago";
     $stmt = sqlsrv_query($conn, $sql);
+
+    if ($stmt === false) {
+        error_log("Error al obtener SCOPE_IDENTITY para id_pago: " . print_r(sqlsrv_errors(), true));
+        echo "<div class='form-container'><p style='color:red;'>Error al obtener el ID de pago: " . print_r(sqlsrv_errors(), true) . "</p><a href='pelicula.php'>Volver</a></div>";
+        sqlsrv_close($conn);
+        ob_end_flush();
+        exit();
+    }
+
     $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
     $id_pago = isset($row['id_pago']) ? (int)$row['id_pago'] : null;
     sqlsrv_free_stmt($stmt);
-    error_log("Pago creado - id_pago: " . ($id_pago ?? 'NULL'));
+    error_log("ID de pago obtenido con SCOPE_IDENTITY: " . ($id_pago ?? 'NULL'));
 
+    // Si SCOPE_IDENTITY() falla, intentar obtener el ID con una consulta alternativa
+    if (!$id_pago) {
+        error_log("SCOPE_IDENTITY devolvió NULL para id_pago, intentando consulta alternativa");
+        $sql = "SELECT id_pago FROM Pago WHERE id_reserva_funcion = ? AND fecha_pago = ? AND metodo_pago = ? AND estado_pago = ?";
+        $params = [$id_reserva_funcion, $fecha_pago, $metodo_pago, $estado_pago];
+        $stmt = sqlsrv_query($conn, $sql, $params);
+
+        if ($stmt === false) {
+            error_log("Error en consulta alternativa para id_pago: " . print_r(sqlsrv_errors(), true));
+            echo "<div class='form-container'><p style='color:red;'>Error al obtener el ID de pago (consulta alternativa): " . print_r(sqlsrv_errors(), true) . "</p><a href='pelicula.php'>Volver</a></div>";
+            sqlsrv_close($conn);
+            ob_end_flush();
+            exit();
+        }
+
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        $id_pago = isset($row['id_pago']) ? (int)$row['id_pago'] : null;
+        sqlsrv_free_stmt($stmt);
+        error_log("ID de pago obtenido con consulta alternativa: " . ($id_pago ?? 'NULL'));
+    }
+
+    // Verificar si se obtuvo un id_pago válido
     if (!$id_pago) {
         error_log("No se pudo obtener un id_pago válido");
         echo "<div class='form-container'><p style='color:red;'>Error: No se pudo generar el ID de pago.</p><a href='pelicula.php'>Volver</a></div>";
@@ -416,131 +458,8 @@ if (isset($_POST['confirm_purchase'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zynemax+ | Películas</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-            color: #333;
-        }
-        header {
-            background-color: #b22222;
-            color: white;
-            text-align: center;
-            padding: 20px 0;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        header h1 {
-            margin: 0;
-            font-size: 2.5em;
-        }
-        nav {
-            background-color: #333;
-            padding: 10px 0;
-            text-align: center;
-        }
-        nav a {
-            color: white;
-            text-decoration: none;
-            margin: 0 20px;
-            font-size: 1.1em;
-        }
-        nav a:hover {
-            color: #b22222;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 30px auto;
-            padding: 0 20px;
-        }
-        .welcome-message {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .welcome-message h2 {
-            color: #b22222;
-            font-size: 1.8em;
-        }
-        .form-container {
-            background-color: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-        }
-        .form-container h2 {
-            color: #b22222;
-            margin-top: 0;
-            font-size: 1.6em;
-        }
-        .form-container p {
-            margin: 10px 0;
-            font-size: 1.1em;
-        }
-        .form-container form {
-            margin: 15px 0;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 15px;
-        }
-        .form-container form:last-child {
-            border-bottom: none;
-        }
-        .form-container button {
-            background-color: #b22222;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1em;
-        }
-        .form-container button:hover {
-            background-color: #8b1a1a;
-        }
-        .comprobante {
-            background-color: #fff8e1;
-            border: 2px solid #b22222;
-            text-align: center;
-        }
-        .comprobante h2 {
-            color: #b22222;
-            font-size: 2em;
-        }
-        .comprobante h3 {
-            color: #333;
-            font-size: 1.5em;
-        }
-        .comprobante hr {
-            border: 1px dashed #b22222;
-            margin: 20px 0;
-        }
-        .comprobante p {
-            font-size: 1.2em;
-            margin: 10px 0;
-        }
-        .button {
-            display: inline-block;
-            background-color: #b22222;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            text-decoration: none;
-            font-size: 1em;
-        }
-        .button:hover {
-            background-color: #8b1a1a;
-        }
-        footer {
-            background-color: #333;
-            color: white;
-            text-align: center;
-            padding: 15px 0;
-            position: fixed;
-            width: 100%;
-            bottom: 0;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css"> <!-- Enlace al CSS que usas normalmente -->
+    <script src="scrip.js" defer></script> <!-- Enlace a tu archivo JavaScript -->
 </head>
 <body>
     <header>
@@ -795,7 +714,7 @@ if (isset($_POST['confirm_purchase'])) {
                 }
                 ?>
                 <form method="POST">
-                    <button type="submit" name="confirm_purchase">Confirmar Compra</button>
+                    <button type='submit' name='confirm_purchase'>Confirmar Compra</button>
                 </form>
             </div>
         <?php endif; ?>
