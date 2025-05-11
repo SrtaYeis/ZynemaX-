@@ -6,7 +6,7 @@ session_start();
 // Conexión a la base de datos
 $serverName = "database-zynemaxplus-server.database.windows.net";
 $connectionInfo = [
-    "Database" => "database-zynemaxplus-server",
+    "Database" => "ZynemaxDB",
     "UID" => "zynemaxplus",
     "PWD" => "grupo2_1al10",
     "Encrypt" => true,
@@ -19,8 +19,11 @@ if ($conn === false) {
     die("<pre>Conexión fallida: " . print_r(sqlsrv_errors(), true) . "</pre>");
 }
 
-// Validación 1: Verificar que el usuario esté logueado
-if (!isset($_SESSION['dni'])) {
+// Validación de sesión con manejo de redirección
+$current_page = basename($_SERVER['PHP_SELF']);
+if (!isset($_SESSION['dni']) && $current_page !== 'index.php') {
+    // Depuración: Verificar si estamos en un bucle
+    error_log("Sesión no iniciada en $current_page, redirigiendo a index.php?error=6");
     header("Location: index.php?error=6");
     exit();
 }
@@ -86,12 +89,38 @@ if (isset($_POST['confirm_purchase'])) {
 
     $dni_usuario = $_SESSION['dni'];
     $fecha_reserva = date('Y-m-d H:i:s');
+    $movie_id = $_SESSION['selected_movie'];
+    $sala_id = $_SESSION['selected_sala'];
+    $funcion_id = $_SESSION['function_id'];
+
+    // Verificar si la función seleccionada existe o crearla
+    $sql = "SELECT id_funcion FROM Funcion WHERE id_pelicula = ? AND id_sala = ? AND fecha_hora = (
+        SELECT fecha_hora FROM Funcion WHERE id_funcion = ?
+    )";
+    $params = [$movie_id, $sala_id, $funcion_id];
+    $stmt = sqlsrv_query($conn, $sql, $params);
+    if ($stmt && !sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+        // Si no existe, insertar nueva función
+        $sql = "INSERT INTO Funcion (id_pelicula, id_sala, fecha_hora) VALUES (?, ?, (
+            SELECT fecha_hora FROM Funcion WHERE id_funcion = ?
+        ))";
+        $params = [$movie_id, $sala_id, $funcion_id];
+        $stmt = sqlsrv_query($conn, $sql, $params);
+        if ($stmt === false) {
+            echo "<p style='color:red;'>Error al crear función: " . print_r(sqlsrv_errors(), true) . "</p>";
+            echo "<a href='pelicula.php'>Volver</a>";
+            sqlsrv_close($conn);
+            ob_end_flush();
+            exit();
+        }
+        $funcion_id = sqlsrv_next_result($conn) ? sqlsrv_get_field(1, 0) : sqlsrv_errors();
+    }
+    sqlsrv_free_stmt($stmt);
 
     // Insertar en Reserva
     $sql = "INSERT INTO Reserva (dni_usuario, fecha_reserva) VALUES (?, ?)";
     $params = [$dni_usuario, $fecha_reserva];
     $stmt = sqlsrv_query($conn, $sql, $params);
-
     if ($stmt === false) {
         echo "<p style='color:red;'>Error al crear reserva: " . print_r(sqlsrv_errors(), true) . "</p>";
         echo "<a href='pelicula.php'>Volver</a>";
@@ -99,18 +128,12 @@ if (isset($_POST['confirm_purchase'])) {
         ob_end_flush();
         exit();
     }
+    $id_reserva = sqlsrv_next_result($conn) ? sqlsrv_get_field(1, 0) : sqlsrv_errors();
 
-    // Obtener el ID de la reserva
-    $sql = "SELECT SCOPE_IDENTITY() AS id_reserva";
-    $stmt = sqlsrv_query($conn, $sql);
-    $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-    $id_reserva = $row['id_reserva'];
-
-    // Vincular la reserva con la función
+    // Vincular la reserva con la función en Reserva_funcion
     $sql = "INSERT INTO Reserva_funcion (id_reserva, id_funcion) VALUES (?, ?)";
-    $params = [$id_reserva, $_SESSION['function_id']];
+    $params = [$id_reserva, $funcion_id];
     $stmt = sqlsrv_query($conn, $sql, $params);
-
     if ($stmt === false) {
         echo "<p style='color:red;'>Error al vincular reserva con función: " . print_r(sqlsrv_errors(), true) . "</p>";
         echo "<a href='pelicula.php'>Volver</a>";
@@ -118,18 +141,12 @@ if (isset($_POST['confirm_purchase'])) {
         ob_end_flush();
         exit();
     }
-
-    // Obtener el ID de Reserva_funcion
-    $sql = "SELECT SCOPE_IDENTITY() AS id_reserva_funcion";
-    $stmt = sqlsrv_query($conn, $sql);
-    $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-    $id_reserva_funcion = $row['id_reserva_funcion'];
+    $id_reserva_funcion = sqlsrv_next_result($conn) ? sqlsrv_get_field(1, 0) : sqlsrv_errors();
 
     // Vincular la reserva con la butaca
     $sql = "INSERT INTO Reserva_butaca (id_reserva_funcion, id_butaca) VALUES (?, ?)";
     $params = [$id_reserva_funcion, $_SESSION['selected_butaca']];
     $stmt = sqlsrv_query($conn, $sql, $params);
-
     if ($stmt === false) {
         echo "<p style='color:red;'>Error al vincular reserva con butaca: " . print_r(sqlsrv_errors(), true) . "</p>";
         echo "<a href='pelicula.php'>Volver</a>";
@@ -156,7 +173,6 @@ if (isset($_POST['confirm_purchase'])) {
     $sql = "INSERT INTO Pago (id_reserva_funcion, metodo_pago, fecha_pago, estado_pago) VALUES (?, ?, ?, ?)";
     $params = [$id_reserva_funcion, 'tarjeta', date('Y-m-d H:i:s'), 'pendiente'];
     $stmt = sqlsrv_query($conn, $sql, $params);
-
     if ($stmt === false) {
         echo "<p style='color:red;'>Error al crear pago: " . print_r(sqlsrv_errors(), true) . "</p>";
         echo "<a href='pelicula.php'>Volver</a>";
@@ -233,7 +249,7 @@ if (isset($_POST['simulate_payment'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zynemax+ | Películas</title>
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
     <header>
@@ -411,16 +427,18 @@ if (isset($_POST['simulate_payment'])) {
                 JOIN Sede s ON sa.id_sede = s.id_sede
                 JOIN Reserva_butaca rb ON rf.id_reserva_funcion = rb.id_reserva_funcion
                 JOIN Butaca b ON rb.id_butaca = b.id_butaca
-                WHERE u.dni = ? AND p.id_pelicula = ? AND s.id_sede = ? AND sa.id_sala = ? AND b.id_butaca = ? AND f.id_funcion = ?";
+                WHERE u.dni = ? AND p.id_pelicula = ? AND s.id_sede = ? AND sa.id_sala = ? AND b.id_butaca = ? AND f.id_funcion = (
+                    SELECT id_funcion FROM Reserva_funcion WHERE id_reserva = r.id_reserva
+                )";
                 $params = [
                     $_SESSION['dni'],
                     $_SESSION['selected_movie'],
                     $_SESSION['selected_sede'],
                     $_SESSION['selected_sala'],
-                    $_SESSION['selected_butaca'],
-                    $_SESSION['function_id']
+                    $_SESSION['selected_butaca']
                 ];
                 $stmt = sqlsrv_query($conn, $sql, $params);
+
                 if ($stmt && $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                     echo "<p><strong>Usuario:</strong> " . $row['usuario'] . "</p>";
                     echo "<p><strong>Película:</strong> " . $row['titulo'] . "</p>";
@@ -463,7 +481,7 @@ if (isset($_POST['simulate_payment'])) {
     <footer>
         <p>© 2025 Zynemax+ | Todos los derechos reservados</p>
     </footer>
-    <script src="/scrip.js" defer></script>
+    <script src="/script.js" defer></script>
     <?php sqlsrv_close($conn); ?>
 </body>
 </html>
