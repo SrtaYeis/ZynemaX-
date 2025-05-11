@@ -2,20 +2,30 @@
 ob_start(); // Iniciar el búfer de salida
 header("Content-Type: text/html; charset=UTF-8");
 session_start();
+
 // Conexión a la base de datos
 $serverName = "database-zynemaxplus-server.database.windows.net";
 $connectionInfo = [
-    "Database" => "database-zynemaxplus-server",
+    "Database" => "ZynemaxDB",
     "UID" => "zynemaxplus",
     "PWD" => "grupo2_1al10",
     "Encrypt" => true,
     "TrustServerCertificate" => false
 ];
+
 $conn = sqlsrv_connect($serverName, $connectionInfo);
 
 if ($conn === false) {
+    error_log("Conexión fallida: " . print_r(sqlsrv_errors(), true));
     die("<pre>Conexión fallida: " . print_r(sqlsrv_errors(), true) . "</pre>");
 }
+
+// Si ya hay sesión, redirigir a pelicula.php
+if (isset($_SESSION['dni'])) {
+    header("Location: pelicula.php");
+    exit();
+}
+
 // Procesar registro (solo cliente)
 if (isset($_POST['register'])) {
     $dni = isset($_POST['dni']) ? (int)$_POST['dni'] : null;
@@ -30,6 +40,7 @@ if (isset($_POST['register'])) {
         $stmt = sqlsrv_query($conn, $sql, $params);
 
         if ($stmt === false) {
+            error_log("Error al registrarse: " . print_r(sqlsrv_errors(), true));
             header("Location: index.php?error=1");
             exit();
         } else {
@@ -42,38 +53,49 @@ if (isset($_POST['register'])) {
         exit();
     }
 }
+
 // Procesar login
 if (isset($_POST['login'])) {
     $dni = isset($_POST['dni']) ? (int)$_POST['dni'] : null;
     $contrasena = isset($_POST['contrasena']) ? $_POST['contrasena'] : null;
+
     if ($dni && $contrasena) {
         $sql = "SELECT dni, nombre, email, contrasena, tipo_usuario FROM Usuario WHERE dni = ?";
         $params = [$dni];
         $stmt = sqlsrv_query($conn, $sql, $params);
-        if ($stmt && sqlsrv_has_rows($stmt)) {
+
+        if ($stmt === false) {
+            error_log("Error en la consulta de login: " . print_r(sqlsrv_errors(), true));
+            header("Location: index.php?error=4");
+            exit();
+        }
+
+        if (sqlsrv_has_rows($stmt)) {
             $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
             if (password_verify($contrasena, $row['contrasena'])) {
                 $_SESSION['dni'] = $row['dni'];
                 $_SESSION['nombre'] = $row['nombre'];
                 $_SESSION['email'] = $row['email'];
                 $_SESSION['tipo_usuario'] = $row['tipo_usuario'];
-                echo "<script>window.location.href = 'index.php?login_success=1';</script>";
+                header("Location: pelicula.php");
                 exit();
             } else {
-                echo "<script>window.location.href = 'index.php?error=3';</script>";
+                error_log("Contraseña incorrecta para DNI: $dni");
+                header("Location: index.php?error=3");
                 exit();
             }
         } else {
-            echo "<script>window.location.href = 'index.php?error=4';</script>";
-           exit();
+            error_log("Usuario no encontrado para DNI: $dni");
+            header("Location: index.php?error=4");
+            exit();
         }
         sqlsrv_free_stmt($stmt);
     } else {
-        echo "<script>window.location.href = 'index.php?error=5';</script>";
+        header("Location: index.php?error=5");
         exit();
     }
 }
-sqlsrv_close($conn);
+
 ?>
 
 <!DOCTYPE html>
@@ -93,7 +115,7 @@ sqlsrv_close($conn);
             <a href="#" onclick="showForm('login')">Login</a>
             <a href="#" onclick="showForm('register')">Register</a>
         <?php else: ?>
-            <a href="#" onclick="showForm('profile')">Perfil (<?php echo $_SESSION['nombre']; ?>)</a>
+            <a href="#" onclick="showForm('profile')">Perfil (<?php echo htmlspecialchars($_SESSION['nombre']); ?>)</a>
             <a href="/pelicula.php">Películas</a>
             <a href="/logout.php">Logout</a>
         <?php endif; ?>
@@ -102,9 +124,8 @@ sqlsrv_close($conn);
         <?php if (!isset($_SESSION['dni'])): ?>
             <div class="auth-section">
                 <?php
-                $error = isset($_GET['error']) ? $_GET['error'] : 0;
+                $error = isset($_GET['error']) ? (int)$_GET['error'] : 0;
                 $register_success = isset($_GET['register_success']) ? true : false;
-                $login_success = isset($_GET['login_success']) ? true : false;
                 if ($error == 1) echo "<p style='color:red;'>Error al registrarse. Verifica los datos.</p>";
                 if ($error == 2) echo "<p style='color:red;'>Faltan datos en el formulario.</p>";
                 if ($error == 3) echo "<p style='color:red;'>Contraseña incorrecta.</p>";
@@ -134,21 +155,15 @@ sqlsrv_close($conn);
             </div>
         <?php else: ?>
             <div class="welcome-message">
-                <?php if (isset($_GET['login_success'])): ?>
-                    <h2>Bienvenido, <?php echo $_SESSION['nombre']; ?> (<?php echo $_SESSION['tipo_usuario']; ?>)</h2>
-                <?php else: ?>
-                    <h2>Bienvenido, <?php echo $_SESSION['nombre']; ?> (<?php echo $_SESSION['tipo_usuario']; ?>)</h2>
-                <?php endif; ?>
-
+                <h2>Bienvenido, <?php echo htmlspecialchars($_SESSION['nombre']); ?> (<?php echo htmlspecialchars($_SESSION['tipo_usuario']); ?>)</h2>
             </div>
             <!-- Sección de Perfil -->
             <div id="profile-form" class="form-container" style="display: none;">
                 <h2>Perfil de Usuario</h2>
-                <p><strong>DNI:</strong> <?php echo $_SESSION['dni']; ?></p>
-                <p><strong>Nombre:</strong> <?php echo $_SESSION['nombre']; ?></p>
-                <p><strong>Email:</strong> <?php echo $_SESSION['email']; ?></p>
-                <p><strong>Tipo de Usuario:</strong> <?php echo $_SESSION['tipo_usuario']; ?></p>
-
+                <p><strong>DNI:</strong> <?php echo htmlspecialchars($_SESSION['dni']); ?></p>
+                <p><strong>Nombre:</strong> <?php echo htmlspecialchars($_SESSION['nombre']); ?></p>
+                <p><strong>Email:</strong> <?php echo htmlspecialchars($_SESSION['email']); ?></p>
+                <p><strong>Tipo de Usuario:</strong> <?php echo htmlspecialchars($_SESSION['tipo_usuario']); ?></p>
             </div>
         <?php endif; ?>
     </div>
@@ -159,5 +174,6 @@ sqlsrv_close($conn);
 </body>
 </html>
 <?php
+sqlsrv_close($conn);
 ob_end_flush(); // Finalizar el búfer de salida
 ?>
