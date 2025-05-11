@@ -100,23 +100,65 @@ if (isset($_POST['select_sala'])) {
             exit();
         }
 
-        // Obtener el ID de la reserva recién creada
+        // Verificar si la inserción fue exitosa
+        $rows_affected = sqlsrv_rows_affected($stmt);
+        error_log("Filas afectadas al insertar en Reserva: " . $rows_affected);
+        if ($rows_affected <= 0) {
+            error_log("No se insertó ninguna fila en Reserva");
+            echo "<div class='form-container'><p style='color:red;'>Error: No se pudo insertar la reserva.</p><a href='pelicula.php?step=sede'>Volver</a></div>";
+            sqlsrv_close($conn);
+            ob_end_flush();
+            exit();
+        }
+
+        // Paso 2: Obtener el ID de la reserva recién creada
         $sql = "SELECT SCOPE_IDENTITY() AS id_reserva";
         $stmt = sqlsrv_query($conn, $sql);
-        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-        $id_reserva = (int)$row['id_reserva'];
-        sqlsrv_free_stmt($stmt);
-        error_log("Reserva creada - id_reserva: " . $id_reserva);
 
+        if ($stmt === false) {
+            error_log("Error al obtener SCOPE_IDENTITY: " . print_r(sqlsrv_errors(), true));
+            echo "<div class='form-container'><p style='color:red;'>Error al obtener el ID de reserva: " . print_r(sqlsrv_errors(), true) . "</p><a href='pelicula.php?step=sede'>Volver</a></div>";
+            sqlsrv_close($conn);
+            ob_end_flush();
+            exit();
+        }
+
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        $id_reserva = isset($row['id_reserva']) ? (int)$row['id_reserva'] : null;
+        sqlsrv_free_stmt($stmt);
+        error_log("ID de reserva obtenido con SCOPE_IDENTITY: " . ($id_reserva ?? 'NULL'));
+
+        // Si SCOPE_IDENTITY() falla, intentar obtener el ID con una consulta alternativa
         if (!$id_reserva) {
-            error_log("id_reserva es NULL después de la inserción");
+            error_log("SCOPE_IDENTITY devolvió NULL, intentando consulta alternativa");
+            $sql = "SELECT id_reserva FROM Reserva WHERE dni_usuario = ? AND fecha_reserva = ?";
+            $params = [$dni_usuario, $fecha_reserva];
+            $stmt = sqlsrv_query($conn, $sql, $params);
+
+            if ($stmt === false) {
+                error_log("Error en consulta alternativa para id_reserva: " . print_r(sqlsrv_errors(), true));
+                echo "<div class='form-container'><p style='color:red;'>Error al obtener el ID de reserva (consulta alternativa): " . print_r(sqlsrv_errors(), true) . "</p><a href='pelicula.php?step=sede'>Volver</a></div>";
+                sqlsrv_close($conn);
+                ob_end_flush();
+                exit();
+            }
+
+            $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            $id_reserva = isset($row['id_reserva']) ? (int)$row['id_reserva'] : null;
+            sqlsrv_free_stmt($stmt);
+            error_log("ID de reserva obtenido con consulta alternativa: " . ($id_reserva ?? 'NULL'));
+        }
+
+        // Verificar si se obtuvo un id_reserva válido
+        if (!$id_reserva) {
+            error_log("No se pudo obtener un id_reserva válido");
             echo "<div class='form-container'><p style='color:red;'>Error: No se pudo generar el ID de reserva.</p><a href='pelicula.php?step=sede'>Volver</a></div>";
             sqlsrv_close($conn);
             ob_end_flush();
             exit();
         }
 
-        // Paso 2: Crear un registro en Reserva_funcion
+        // Paso 3: Crear un registro en Reserva_funcion
         $sql = "INSERT INTO Reserva_funcion (id_reserva, id_funcion) VALUES (?, ?)";
         $params = [$id_reserva, $funcion_id];
         $stmt = sqlsrv_query($conn, $sql, $params);
@@ -133,9 +175,9 @@ if (isset($_POST['select_sala'])) {
         $sql = "SELECT SCOPE_IDENTITY() AS id_reserva_funcion";
         $stmt = sqlsrv_query($conn, $sql);
         $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-        $id_reserva_funcion = (int)$row['id_reserva_funcion'];
+        $id_reserva_funcion = isset($row['id_reserva_funcion']) ? (int)$row['id_reserva_funcion'] : null;
         sqlsrv_free_stmt($stmt);
-        error_log("Reserva_funcion creada - id_reserva_funcion: " . $id_reserva_funcion);
+        error_log("Reserva_funcion creada - id_reserva_funcion: " . ($id_reserva_funcion ?? 'NULL'));
 
         if (!$id_reserva_funcion) {
             error_log("id_reserva_funcion es NULL después de la inserción");
@@ -242,9 +284,17 @@ if (isset($_POST['confirm_purchase'])) {
     $sql = "SELECT SCOPE_IDENTITY() AS id_pago";
     $stmt = sqlsrv_query($conn, $sql);
     $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-    $id_pago = (int)$row['id_pago'];
+    $id_pago = isset($row['id_pago']) ? (int)$row['id_pago'] : null;
     sqlsrv_free_stmt($stmt);
-    error_log("Pago creado - id_pago: " . $id_pago);
+    error_log("Pago creado - id_pago: " . ($id_pago ?? 'NULL'));
+
+    if (!$id_pago) {
+        error_log("No se pudo obtener un id_pago válido");
+        echo "<div class='form-container'><p style='color:red;'>Error: No se pudo generar el ID de pago.</p><a href='pelicula.php'>Volver</a></div>";
+        sqlsrv_close($conn);
+        ob_end_flush();
+        exit();
+    }
 
     // Cargar todos los datos para el comprobante
     $sql = "SELECT 
