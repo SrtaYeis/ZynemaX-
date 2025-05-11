@@ -19,11 +19,8 @@ if ($conn === false) {
     die("<pre>Conexión fallida: " . print_r(sqlsrv_errors(), true) . "</pre>");
 }
 
-// Validación de sesión con manejo de redirección
-$current_page = basename($_SERVER['PHP_SELF']);
-if (!isset($_SESSION['dni']) && $current_page !== 'index.php') {
-    // Depuración: Verificar si estamos en un bucle
-    error_log("Sesión no iniciada en $current_page, redirigiendo a index.php?error=6");
+// Validación 1: Verificar que el usuario esté logueado
+if (!isset($_SESSION['dni'])) {
     header("Location: index.php?error=6");
     exit();
 }
