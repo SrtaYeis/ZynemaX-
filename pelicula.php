@@ -213,9 +213,9 @@ if (isset($_POST['confirm_purchase'])) {
     $monto_pago = $row['precio'];
     sqlsrv_free_stmt($stmt);
 
-    // Insertar en la tabla Pago
-    $sql = "INSERT INTO Pago (id_reserva_funcion, metodo_pago, fecha_pago, estado_pago) VALUES (?, ?, ?, ?)";
-    $params = [$id_reserva_funcion, 'pendiente', date('Y-m-d H:i:s'), 'pendiente'];
+    // Insertar en la tabla Pago con metodo_pago como NULL inicialmente
+    $sql = "INSERT INTO Pago (id_reserva_funcion, metodo_pago, fecha_pago, estado_pago) VALUES (?, NULL, ?, ?)";
+    $params = [$id_reserva_funcion, date('Y-m-d H:i:s'), 'pendiente'];
     $stmt = sqlsrv_query($conn, $sql, $params);
 
     if ($stmt === false) {
