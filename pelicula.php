@@ -137,9 +137,6 @@ if (isset($_POST['confirm_purchase'])) {
 
     $dni_usuario = $_SESSION['dni'];
     $fecha_reserva = date('Y-m-d H:i:s');
-    $movie_id = $_SESSION['selected_movie'];
-    $sala_id = $_SESSION['selected_sala'];
-    $funcion_id = $_SESSION['function_id'];
 
     // Insertar en la tabla Reserva
     $sql = "INSERT INTO Reserva (dni_usuario, fecha_reserva) VALUES (?, ?)";
@@ -164,7 +161,7 @@ if (isset($_POST['confirm_purchase'])) {
 
     // Insertar en la tabla Reserva_funcion
     $sql = "INSERT INTO Reserva_funcion (id_reserva, id_funcion) VALUES (?, ?)";
-    $params = [$id_reserva, $funcion_id];
+    $params = [$id_reserva, $_SESSION['function_id']];
     $stmt = sqlsrv_query($conn, $sql, $params);
 
     if ($stmt === false) {
@@ -514,60 +511,107 @@ if (isset($_POST['simulate_payment'])) {
             <div class="form-container">
                 <h2>Resumen de tu Compra</h2>
                 <?php
-                $sql = "SELECT 
-                    u.nombre AS usuario,
-                    p.titulo,
-                    s.ciudad_sede,
-                    sa.nombre_sala,
-                    b.fila,
-                    b.numero_butaca,
-                    f.fecha_hora,
-                    p.precio
-                FROM Usuario u
-                JOIN Reserva r ON u.dni = r.dni_usuario
-                JOIN Reserva_funcion rf ON r.id_reserva = rf.id_reserva
-                JOIN Funcion f ON rf.id_funcion = f.id_funcion
-                JOIN Pelicula p ON f.id_pelicula = p.id_pelicula
-                JOIN Sala sa ON f.id_sala = sa.id_sala
-                JOIN Sede s ON sa.id_sede = s.id_sede
-                JOIN Reserva_butaca rb ON rf.id_reserva_funcion = rb.id_reserva_funcion
-                JOIN Butaca b ON rb.id_butaca = b.id_butaca
-                WHERE u.dni = ? AND p.id_pelicula = ? AND s.id_sede = ? AND sa.id_sala = ? AND b.id_butaca = ? AND f.id_funcion = ?";
-                $params = [
-                    $_SESSION['dni'],
-                    $_SESSION['selected_movie'],
-                    $_SESSION['selected_sede'],
-                    $_SESSION['selected_sala'],
-                    $_SESSION['selected_butaca'],
-                    $_SESSION['function_id']
-                ];
+                // Obtener detalles de la película
+                $sql = "SELECT titulo, precio FROM Pelicula WHERE id_pelicula = ?";
+                $params = [$_SESSION['selected_movie']];
                 $stmt = sqlsrv_query($conn, $sql, $params);
 
                 if ($stmt === false) {
-                    error_log("Error al cargar resumen: " . print_r(sqlsrv_errors(), true));
-                    echo "<p style='color:red;'>Error al cargar el resumen: " . print_r(sqlsrv_errors(), true) . "</p>";
+                    error_log("Error al cargar detalles de la película: " . print_r(sqlsrv_errors(), true));
+                    echo "<p style='color:red;'>Error al cargar detalles de la película: " . print_r(sqlsrv_errors(), true) . "</p>";
                     echo "<a href='pelicula.php'>Volver</a>";
                     sqlsrv_close($conn);
                     ob_end_flush();
                     exit();
                 }
 
-                if ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                    echo "<p><strong>Usuario:</strong> " . htmlspecialchars($row['usuario']) . "</p>";
-                    echo "<p><strong>Película:</strong> " . htmlspecialchars($row['titulo']) . "</p>";
-                    echo "<p><strong>Sede:</strong> " . htmlspecialchars($row['ciudad_sede']) . "</p>";
-                    echo "<p><strong>Sala:</strong> " . htmlspecialchars($row['nombre_sala']) . "</p>";
-                    echo "<p><strong>Butaca:</strong> Fila " . htmlspecialchars($row['fila']) . ", Número " . $row['numero_butaca'] . "</p>";
-                    echo "<p><strong>Fecha y Hora:</strong> " . $row['fecha_hora']->format('Y-m-d H:i:s') . "</p>";
-                    echo "<p><strong>Precio:</strong> $" . number_format($row['precio'], 2) . "</p>";
-                } else {
-                    echo "<p style='color:red;'>No se encontraron datos para el resumen o los datos no coinciden.</p>";
+                $pelicula_data = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+                sqlsrv_free_stmt($stmt);
+
+                // Obtener detalles de la sede
+                $sql = "SELECT ciudad_sede FROM Sede WHERE id_sede = ?";
+                $params = [$_SESSION['selected_sede']];
+                $stmt = sqlsrv_query($conn, $sql, $params);
+
+                if ($stmt === false) {
+                    error_log("Error al cargar detalles de la sede: " . print_r(sqlsrv_errors(), true));
+                    echo "<p style='color:red;'>Error al cargar detalles de la sede: " . print_r(sqlsrv_errors(), true) . "</p>";
                     echo "<a href='pelicula.php'>Volver</a>";
                     sqlsrv_close($conn);
                     ob_end_flush();
                     exit();
                 }
+
+                $sede_data = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
                 sqlsrv_free_stmt($stmt);
+
+                // Obtener detalles de la sala
+                $sql = "SELECT nombre_sala FROM Sala WHERE id_sala = ?";
+                $params = [$_SESSION['selected_sala']];
+                $stmt = sqlsrv_query($conn, $sql, $params);
+
+                if ($stmt === false) {
+                    error_log("Error al cargar detalles de la sala: " . print_r(sqlsrv_errors(), true));
+                    echo "<p style='color:red;'>Error al cargar detalles de la sala: " . print_r(sqlsrv_errors(), true) . "</p>";
+                    echo "<a href='pelicula.php'>Volver</a>";
+                    sqlsrv_close($conn);
+                    ob_end_flush();
+                    exit();
+                }
+
+                $sala_data = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+                sqlsrv_free_stmt($stmt);
+
+                // Obtener detalles de la función
+                $sql = "SELECT fecha_hora FROM Funcion WHERE id_funcion = ?";
+                $params = [$_SESSION['function_id']];
+                $stmt = sqlsrv_query($conn, $sql, $params);
+
+                if ($stmt === false) {
+                    error_log("Error al cargar detalles de la función: " . print_r(sqlsrv_errors(), true));
+                    echo "<p style='color:red;'>Error al cargar detalles de la función: " . print_r(sqlsrv_errors(), true) . "</p>";
+                    echo "<a href='pelicula.php'>Volver</a>";
+                    sqlsrv_close($conn);
+                    ob_end_flush();
+                    exit();
+                }
+
+                $funcion_data = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+                sqlsrv_free_stmt($stmt);
+
+                // Obtener detalles de la butaca
+                $sql = "SELECT fila, numero_butaca FROM Butaca WHERE id_butaca = ?";
+                $params = [$_SESSION['selected_butaca']];
+                $stmt = sqlsrv_query($conn, $sql, $params);
+
+                if ($stmt === false) {
+                    error_log("Error al cargar detalles de la butaca: " . print_r(sqlsrv_errors(), true));
+                    echo "<p style='color:red;'>Error al cargar detalles de la butaca: " . print_r(sqlsrv_errors(), true) . "</p>";
+                    echo "<a href='pelicula.php'>Volver</a>";
+                    sqlsrv_close($conn);
+                    ob_end_flush();
+                    exit();
+                }
+
+                $butaca_data = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+                sqlsrv_free_stmt($stmt);
+
+                // Mostrar el resumen
+                if ($pelicula_data && $sede_data && $sala_data && $funcion_data && $butaca_data) {
+                    echo "<p><strong>Usuario:</strong> " . htmlspecialchars($_SESSION['nombre']) . "</p>";
+                    echo "<p><strong>Película:</strong> " . htmlspecialchars($pelicula_data['titulo']) . "</p>";
+                    echo "<p><strong>Sede:</strong> " . htmlspecialchars($sede_data['ciudad_sede']) . "</p>";
+                    echo "<p><strong>Sala:</strong> " . htmlspecialchars($sala_data['nombre_sala']) . "</p>";
+                    echo "<p><strong>Butaca:</strong> Fila " . htmlspecialchars($butaca_data['fila']) . ", Número " . $butaca_data['numero_butaca'] . "</p>";
+                    echo "<p><strong>Fecha y Hora:</strong> " . $funcion_data['fecha_hora']->format('Y-m-d H:i:s') . "</p>";
+                    echo "<p><strong>Precio:</strong> $" . number_format($pelicula_data['precio'], 2) . "</p>";
+                } else {
+                    echo "<p style='color:red;'>Error: No se pudieron cargar todos los datos del resumen.</p>";
+                    echo "<a href='pelicula.php'>Volver</a>";
+                    sqlsrv_close($conn);
+                    ob_end_flush();
+                    exit();
+                }
                 ?>
                 <form method="POST">
                     <button type="submit" name="confirm_purchase">Confirmar Compra</button>
