@@ -99,7 +99,7 @@ sqlsrv_close($conn);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zynemax+ | Plataforma de Cine</title>
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
@@ -111,8 +111,8 @@ sqlsrv_close($conn);
             <a href="#" onclick="showForm('register')">Register</a>
         <?php else: ?>
             <a href="#" onclick="showForm('profile')">Perfil (<?php echo htmlspecialchars($_SESSION['nombre']); ?>)</a>
-            <a href="/pelicula.php">Películas</a>
-            <a href="/logout.php">Logout</a>
+            <a href="pelicula.php">Películas</a>
+            <a href="logout.php">Logout</a>
         <?php endif; ?>
     </nav>
     <div class="container">
@@ -163,10 +163,9 @@ sqlsrv_close($conn);
     <footer>
         <p>© 2025 Zynemax+ | Todos los derechos reservados</p>
     </footer>
-    <script src="/scrip.js" defer></script>
+    <script src="scrip.js" defer></script>
 </body>
 </html>
 <?php
-sqlsrv_close($conn);
 ob_end_flush(); // Finalizar el búfer de salida
 ?>
