@@ -125,11 +125,18 @@ if (isset($_POST['select_butaca'])) {
     }
 }
 
-// Procesar confirmación de compra (Reservar)
+// Procesar confirmación de compra (Reservar) - Simulación básica
 if (isset($_POST['confirm_purchase'])) {
+    // Depuración
+    error_log("Iniciando confirm_purchase");
+
+    // Validar que todas las variables de sesión estén definidas
     if (!isset($_SESSION['selected_movie']) || !isset($_SESSION['selected_sede']) || !isset($_SESSION['selected_sala']) || !isset($_SESSION['selected_butaca']) || !isset($_SESSION['function_id'])) {
+        error_log("Faltan datos de sesión en confirm_purchase");
+        echo "<div class='form-container'>";
         echo "<p style='color:red;'>Error: Faltan datos para completar la compra.</p>";
         echo "<a href='pelicula.php'>Volver</a>";
+        echo "</div>";
         sqlsrv_close($conn);
         ob_end_flush();
         exit();
@@ -138,15 +145,17 @@ if (isset($_POST['confirm_purchase'])) {
     $dni_usuario = $_SESSION['dni'];
     $fecha_reserva = date('Y-m-d H:i:s');
 
-    // Insertar en la tabla Reserva
+    // Paso 1: Insertar en la tabla Reserva
     $sql = "INSERT INTO Reserva (dni_usuario, fecha_reserva) VALUES (?, ?)";
     $params = [$dni_usuario, $fecha_reserva];
     $stmt = sqlsrv_query($conn, $sql, $params);
 
     if ($stmt === false) {
         error_log("Error al crear reserva: " . print_r(sqlsrv_errors(), true));
+        echo "<div class='form-container'>";
         echo "<p style='color:red;'>Error al crear reserva: " . print_r(sqlsrv_errors(), true) . "</p>";
         echo "<a href='pelicula.php'>Volver</a>";
+        echo "</div>";
         sqlsrv_close($conn);
         ob_end_flush();
         exit();
@@ -158,16 +167,19 @@ if (isset($_POST['confirm_purchase'])) {
     $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
     $id_reserva = $row['id_reserva'];
     sqlsrv_free_stmt($stmt);
+    error_log("Reserva creada - id_reserva: " . $id_reserva);
 
-    // Insertar en la tabla Reserva_funcion
+    // Paso 2: Insertar en la tabla Reserva_funcion
     $sql = "INSERT INTO Reserva_funcion (id_reserva, id_funcion) VALUES (?, ?)";
     $params = [$id_reserva, $_SESSION['function_id']];
     $stmt = sqlsrv_query($conn, $sql, $params);
 
     if ($stmt === false) {
         error_log("Error al vincular reserva con función: " . print_r(sqlsrv_errors(), true));
+        echo "<div class='form-container'>";
         echo "<p style='color:red;'>Error al vincular reserva con función: " . print_r(sqlsrv_errors(), true) . "</p>";
         echo "<a href='pelicula.php'>Volver</a>";
+        echo "</div>";
         sqlsrv_close($conn);
         ob_end_flush();
         exit();
@@ -179,120 +191,40 @@ if (isset($_POST['confirm_purchase'])) {
     $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
     $id_reserva_funcion = $row['id_reserva_funcion'];
     sqlsrv_free_stmt($stmt);
+    error_log("Reserva_funcion creada - id_reserva_funcion: " . $id_reserva_funcion);
 
-    // Insertar en la tabla Reserva_butaca
+    // Paso 3: Insertar en la tabla Reserva_butaca
     $sql = "INSERT INTO Reserva_butaca (id_reserva_funcion, id_butaca) VALUES (?, ?)";
     $params = [$id_reserva_funcion, $_SESSION['selected_butaca']];
     $stmt = sqlsrv_query($conn, $sql, $params);
 
     if ($stmt === false) {
         error_log("Error al vincular reserva con butaca: " . print_r(sqlsrv_errors(), true));
+        echo "<div class='form-container'>";
         echo "<p style='color:red;'>Error al vincular reserva con butaca: " . print_r(sqlsrv_errors(), true) . "</p>";
         echo "<a href='pelicula.php'>Volver</a>";
+        echo "</div>";
         sqlsrv_close($conn);
         ob_end_flush();
         exit();
     }
     sqlsrv_free_stmt($stmt);
+    error_log("Reserva_butaca creada");
 
-    // Obtener el precio de la película
-    $sql = "SELECT precio FROM Pelicula WHERE id_pelicula = ?";
-    $params = [$_SESSION['selected_movie']];
-    $stmt = sqlsrv_query($conn, $sql, $params);
+    // Paso 4: Crear un registro básico en la tabla Pago con valores predeterminados
+    $metodo_pago = 'efectivo'; // Valor predeterminado
+    $fecha_pago = date('Y-m-d H:i:s'); // Fecha actual
+    $estado_pago = 'completado'; // Estado predeterminado
 
-    if ($stmt === false) {
-        error_log("Error al obtener precio: " . print_r(sqlsrv_errors(), true));
-        echo "<p style='color:red;'>Error al obtener precio: " . print_r(sqlsrv_errors(), true) . "</p>";
-        echo "<a href='pelicula.php'>Volver</a>";
-        sqlsrv_close($conn);
-        ob_end_flush();
-        exit();
-    }
-
-    $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-    $monto_pago = $row['precio'];
-    sqlsrv_free_stmt($stmt);
-
-    // Guardar id_reserva_funcion en la sesión para usarlo en el formulario de pago
-    $_SESSION['id_reserva_funcion'] = $id_reserva_funcion;
-    $_SESSION['monto_pago'] = $monto_pago;
-
-    // Depuración
-    error_log("Después de confirm_purchase - id_reserva_funcion: " . $id_reserva_funcion . ", monto_pago: " . $monto_pago);
-
-    // Redirigir al paso de pago
-    header("Location: pelicula.php?step=payment");
-    exit();
-}
-
-// Procesar el formulario de pago
-if (isset($_POST['process_payment'])) {
-    // Depuración
-    error_log("Iniciando procesamiento de pago");
-
-    // Obtener los datos del formulario
-    $id_reserva_funcion = isset($_POST['id_reserva_funcion']) ? (int)$_POST['id_reserva_funcion'] : null;
-    $metodo_pago = isset($_POST['metodo_pago']) ? strtolower($_POST['metodo_pago']) : null;
-    $fecha_pago = isset($_POST['fecha_pago']) ? $_POST['fecha_pago'] : null;
-    $estado_pago = isset($_POST['estado_pago']) ? strtolower($_POST['estado_pago']) : null;
-
-    // Validar los datos
-    $valid_methods = ['efectivo', 'tarjeta', 'transferencia'];
-    $valid_states = ['pendiente', 'completado', 'fallido'];
-
-    if (!$id_reserva_funcion || !is_numeric($id_reserva_funcion)) {
-        echo "<div class='form-container'>";
-        echo "<p style='color:red;'>Error: El ID de reserva_función no es válido.</p>";
-        echo "<a href='pelicula.php?step=payment'>Volver</a>";
-        echo "</div>";
-        sqlsrv_close($conn);
-        ob_end_flush();
-        exit();
-    }
-
-    if (!in_array($metodo_pago, $valid_methods)) {
-        echo "<div class='form-container'>";
-        echo "<p style='color:red;'>Error: Método de pago no válido.</p>";
-        echo "<a href='pelicula.php?step=payment'>Volver</a>";
-        echo "</div>";
-        sqlsrv_close($conn);
-        ob_end_flush();
-        exit();
-    }
-
-    if (!$fecha_pago) {
-        echo "<div class='form-container'>";
-        echo "<p style='color:red;'>Error: Debes ingresar una fecha de pago.</p>";
-        echo "<a href='pelicula.php?step=payment'>Volver</a>";
-        echo "</div>";
-        sqlsrv_close($conn);
-        ob_end_flush();
-        exit();
-    }
-
-    if (!in_array($estado_pago, $valid_states)) {
-        echo "<div class='form-container'>";
-        echo "<p style='color:red;'>Error: Estado de pago no válido.</p>";
-        echo "<a href='pelicula.php?step=payment'>Volver</a>";
-        echo "</div>";
-        sqlsrv_close($conn);
-        ob_end_flush();
-        exit();
-    }
-
-    // Convertir la fecha al formato correcto para SQL Server
-    $fecha_pago_formatted = date('Y-m-d H:i:s', strtotime($fecha_pago));
-
-    // Insertar el nuevo registro en la tabla Pago
     $sql = "INSERT INTO Pago (id_reserva_funcion, metodo_pago, fecha_pago, estado_pago) VALUES (?, ?, ?, ?)";
-    $params = [$id_reserva_funcion, $metodo_pago, $fecha_pago_formatted, $estado_pago];
+    $params = [$id_reserva_funcion, $metodo_pago, $fecha_pago, $estado_pago];
     $stmt = sqlsrv_query($conn, $sql, $params);
 
     if ($stmt === false) {
-        error_log("Error al insertar el pago: " . print_r(sqlsrv_errors(), true));
+        error_log("Error al crear pago: " . print_r(sqlsrv_errors(), true));
         echo "<div class='form-container'>";
-        echo "<p style='color:red;'>Error al registrar el pago: " . print_r(sqlsrv_errors(), true) . "</p>";
-        echo "<a href='pelicula.php?step=payment'>Volver</a>";
+        echo "<p style='color:red;'>Error al crear pago: " . print_r(sqlsrv_errors(), true) . "</p>";
+        echo "<a href='pelicula.php'>Volver</a>";
         echo "</div>";
         sqlsrv_close($conn);
         ob_end_flush();
@@ -305,19 +237,20 @@ if (isset($_POST['process_payment'])) {
     $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
     $id_pago = $row['id_pago'];
     sqlsrv_free_stmt($stmt);
+    error_log("Pago creado - id_pago: " . $id_pago);
 
-    // Mostrar confirmación
+    // Paso 5: Mostrar mensaje de confirmación básico
     echo "<div class='form-container'>";
-    echo "<h2>Pago Registrado Exitosamente</h2>";
+    echo "<h2>Compra Confirmada Exitosamente</h2>";
     echo "<h3>Zynemax+ | Tu Cine Favorito</h3>";
     echo "<hr>";
     echo "<p><strong>ID de Pago:</strong> " . htmlspecialchars($id_pago) . "</p>";
     echo "<p><strong>ID de Reserva_Función:</strong> " . htmlspecialchars($id_reserva_funcion) . "</p>";
-    echo "<p><strong>Método de Pago:</strong> " . htmlspecialchars(ucfirst($metodo_pago)) . "</p>";
-    echo "<p><strong>Fecha de Pago:</strong> " . htmlspecialchars($fecha_pago_formatted) . "</p>";
-    echo "<p><strong>Estado de Pago:</strong> " . htmlspecialchars(ucfirst($estado_pago)) . "</p>";
+    echo "<p><strong>Método de Pago:</strong> " . htmlspecialchars($metodo_pago) . "</p>";
+    echo "<p><strong>Fecha de Pago:</strong> " . htmlspecialchars($fecha_pago) . "</p>";
+    echo "<p><strong>Estado de Pago:</strong> " . htmlspecialchars($estado_pago) . "</p>";
     echo "<hr>";
-    echo "<p>¡El pago ha sido registrado correctamente!</p>";
+    echo "<p>¡Gracias por tu compra en Zynemax+! Disfruta tu película.</p>";
     echo "<a href='pelicula.php'>Volver</a>";
     echo "</div>";
 
@@ -328,8 +261,6 @@ if (isset($_POST['process_payment'])) {
     unset($_SESSION['sala_name']);
     unset($_SESSION['selected_butaca']);
     unset($_SESSION['function_id']);
-    unset($_SESSION['id_reserva_funcion']);
-    unset($_SESSION['monto_pago']);
 
     sqlsrv_close($conn);
     ob_end_flush();
@@ -356,11 +287,7 @@ if (isset($_POST['process_payment'])) {
     </nav>
     <div class="container">
         <div class="welcome-message">
-            <?php if (isset($_GET['payment_success'])): ?>
-                <h2 style='color:green;'>¡Pago realizado con éxito!</h2>
-            <?php else: ?>
-                <h2>Bienvenido, <?php echo htmlspecialchars($_SESSION['nombre']); ?> (<?php echo htmlspecialchars($_SESSION['tipo_usuario']); ?>)</h2>
-            <?php endif; ?>
+            <h2>Bienvenido, <?php echo htmlspecialchars($_SESSION['nombre']); ?> (<?php echo htmlspecialchars($_SESSION['tipo_usuario']); ?>)</h2>
         </div>
 
         <?php if (!isset($_GET['step']) || $_GET['step'] === 'movies'): ?>
@@ -603,42 +530,6 @@ if (isset($_POST['process_payment'])) {
                 ?>
                 <form method="POST">
                     <button type="submit" name="confirm_purchase">Confirmar Compra</button>
-                </form>
-            </div>
-        <?php endif; ?>
-
-        <?php if (isset($_GET['step']) && $_GET['step'] === 'payment' && isset($_SESSION['id_reserva_funcion'])): ?>
-            <div class="form-container">
-                <h2>Registrar Pago</h2>
-                <p>Ingresa los detalles del pago para registrar la transacción.</p>
-                <form method="POST">
-                    <div style="margin-bottom: 15px;">
-                        <label for="id_reserva_funcion"><strong>ID de Reserva_Función:</strong></label><br>
-                        <input type="number" name="id_reserva_funcion" id="id_reserva_funcion" value="<?php echo htmlspecialchars($_SESSION['id_reserva_funcion']); ?>" readonly required>
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <label for="metodo_pago"><strong>Método de Pago:</strong></label><br>
-                        <select name="metodo_pago" id="metodo_pago" required>
-                            <option value="">Selecciona un método</option>
-                            <option value="efectivo">Efectivo</option>
-                            <option value="tarjeta">Tarjeta</option>
-                            <option value="transferencia">Transferencia</option>
-                        </select>
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <label for="fecha_pago"><strong>Fecha de Pago:</strong></label><br>
-                        <input type="datetime-local" name="fecha_pago" id="fecha_pago" required>
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <label for="estado_pago"><strong>Estado de Pago:</strong></label><br>
-                        <select name="estado_pago" id="estado_pago" required>
-                            <option value="">Selecciona un estado</option>
-                            <option value="pendiente">Pendiente</option>
-                            <option value="completado">Completado</option>
-                            <option value="fallido">Fallido</option>
-                        </select>
-                    </div>
-                    <button type="submit" name="process_payment" style="background-color: #b22222; color: white; padding: 10px 20px; border: none; cursor: pointer;">Confirmar Pago</button>
                 </form>
             </div>
         <?php endif; ?>
