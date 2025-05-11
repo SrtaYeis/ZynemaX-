@@ -3,11 +3,6 @@ ob_start(); // Iniciar el búfer de salida
 header("Content-Type: text/html; charset=UTF-8");
 session_start();
 
-// Depuración: Verificar el estado de la sesión
-// echo "<pre>Estado de la sesión en pelicula.php:\n";
-// var_dump($_SESSION);
-// echo "</pre>";
-
 // Conexión a la base de datos
 $serverName = "database-zynemaxplus-server.database.windows.net";
 $connectionInfo = [
@@ -48,7 +43,7 @@ if (!isset($_SESSION['dni'])) {
     exit();
 }
 
-// Resto del código de pelicula.php (sin cambios)
+// Procesar selección de película
 if (isset($_POST['select_movie'])) {
     $movie_id = isset($_POST['movie_id']) ? (int)$_POST['movie_id'] : null;
     if ($movie_id) {
@@ -62,6 +57,7 @@ if (isset($_POST['select_movie'])) {
     }
 }
 
+// Procesar selección de sede
 if (isset($_POST['select_sede'])) {
     $sede_id = isset($_POST['sede_id']) ? (int)$_POST['sede_id'] : null;
     if ($sede_id) {
@@ -75,6 +71,7 @@ if (isset($_POST['select_sede'])) {
     }
 }
 
+// Procesar selección de sala
 if (isset($_POST['select_sala'])) {
     $sala_id = isset($_POST['sala_id']) ? (int)$_POST['sala_id'] : null;
     $funcion_id = isset($_POST['funcion_id']) ? (int)$_POST['funcion_id'] : null;
@@ -92,6 +89,7 @@ if (isset($_POST['select_sala'])) {
     }
 }
 
+// Procesar selección de butaca
 if (isset($_POST['select_butaca'])) {
     $butaca_id = isset($_POST['butaca_id']) ? (int)$_POST['butaca_id'] : null;
     if ($butaca_id && isset($_SESSION['selected_sala'])) {
@@ -127,6 +125,7 @@ if (isset($_POST['select_butaca'])) {
     }
 }
 
+// Procesar confirmación de compra (Reservar)
 if (isset($_POST['confirm_purchase'])) {
     if (!isset($_SESSION['selected_movie']) || !isset($_SESSION['selected_sede']) || !isset($_SESSION['selected_sala']) || !isset($_SESSION['selected_butaca']) || !isset($_SESSION['function_id'])) {
         echo "<p style='color:red;'>Error: Faltan datos para completar la compra.</p>";
@@ -142,6 +141,7 @@ if (isset($_POST['confirm_purchase'])) {
     $sala_id = $_SESSION['selected_sala'];
     $funcion_id = $_SESSION['function_id'];
 
+    // Insertar en la tabla Reserva
     $sql = "INSERT INTO Reserva (dni_usuario, fecha_reserva) VALUES (?, ?)";
     $params = [$dni_usuario, $fecha_reserva];
     $stmt = sqlsrv_query($conn, $sql, $params);
@@ -155,12 +155,14 @@ if (isset($_POST['confirm_purchase'])) {
         exit();
     }
 
+    // Obtener el ID de la reserva recién creada
     $sql = "SELECT SCOPE_IDENTITY() AS id_reserva";
     $stmt = sqlsrv_query($conn, $sql);
     $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
     $id_reserva = $row['id_reserva'];
     sqlsrv_free_stmt($stmt);
 
+    // Insertar en la tabla Reserva_funcion
     $sql = "INSERT INTO Reserva_funcion (id_reserva, id_funcion) VALUES (?, ?)";
     $params = [$id_reserva, $funcion_id];
     $stmt = sqlsrv_query($conn, $sql, $params);
@@ -174,12 +176,14 @@ if (isset($_POST['confirm_purchase'])) {
         exit();
     }
 
+    // Obtener el ID de la reserva_función recién creada
     $sql = "SELECT SCOPE_IDENTITY() AS id_reserva_funcion";
     $stmt = sqlsrv_query($conn, $sql);
     $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
     $id_reserva_funcion = $row['id_reserva_funcion'];
     sqlsrv_free_stmt($stmt);
 
+    // Insertar en la tabla Reserva_butaca
     $sql = "INSERT INTO Reserva_butaca (id_reserva_funcion, id_butaca) VALUES (?, ?)";
     $params = [$id_reserva_funcion, $_SESSION['selected_butaca']];
     $stmt = sqlsrv_query($conn, $sql, $params);
@@ -194,6 +198,7 @@ if (isset($_POST['confirm_purchase'])) {
     }
     sqlsrv_free_stmt($stmt);
 
+    // Obtener el precio de la película
     $sql = "SELECT precio FROM Pelicula WHERE id_pelicula = ?";
     $params = [$_SESSION['selected_movie']];
     $stmt = sqlsrv_query($conn, $sql, $params);
@@ -211,6 +216,7 @@ if (isset($_POST['confirm_purchase'])) {
     $monto_pago = $row['precio'];
     sqlsrv_free_stmt($stmt);
 
+    // Insertar en la tabla Pago
     $sql = "INSERT INTO Pago (id_reserva_funcion, metodo_pago, fecha_pago, estado_pago) VALUES (?, ?, ?, ?)";
     $params = [$id_reserva_funcion, 'tarjeta', date('Y-m-d H:i:s'), 'pendiente'];
     $stmt = sqlsrv_query($conn, $sql, $params);
@@ -224,6 +230,7 @@ if (isset($_POST['confirm_purchase'])) {
         exit();
     }
 
+    // Obtener el ID del pago recién creado
     $sql = "SELECT SCOPE_IDENTITY() AS id_pago";
     $stmt = sqlsrv_query($conn, $sql);
     $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
@@ -236,6 +243,7 @@ if (isset($_POST['confirm_purchase'])) {
     exit();
 }
 
+// Procesar simulación de pago y mostrar comprobante
 if (isset($_POST['simulate_payment'])) {
     if (!isset($_SESSION['id_pago']) || !isset($_SESSION['monto_pago'])) {
         echo "<p style='color:red;'>Error: No se encontró un pago para procesar la simulación.</p>";
@@ -249,6 +257,7 @@ if (isset($_POST['simulate_payment'])) {
     $monto_pago = $_SESSION['monto_pago'];
     $metodo_pago = isset($_POST['payment_method']) ? $_POST['payment_method'] : 'tarjeta';
 
+    // Actualizar el estado del pago
     $sql = "UPDATE Pago SET metodo_pago = ?, estado_pago = ?, fecha_pago = ? WHERE id_pago = ?";
     $params = [$metodo_pago, 'completado', date('Y-m-d H:i:s'), $id_pago];
     $stmt = sqlsrv_query($conn, $sql, $params);
@@ -263,6 +272,71 @@ if (isset($_POST['simulate_payment'])) {
     }
     sqlsrv_free_stmt($stmt);
 
+    // Consultar los datos para el comprobante
+    $sql = "SELECT 
+        u.nombre AS usuario,
+        p.titulo AS pelicula,
+        s.ciudad_sede AS sede,
+        sa.nombre_sala AS sala,
+        b.fila AS fila,
+        b.numero_butaca AS numero_butaca,
+        f.fecha_hora AS fecha_funcion,
+        p.precio AS monto,
+        pg.metodo_pago AS metodo_pago,
+        pg.fecha_pago AS fecha_pago
+    FROM Pago pg
+    JOIN Reserva_funcion rf ON pg.id_reserva_funcion = rf.id_reserva_funcion
+    JOIN Reserva r ON rf.id_reserva = r.id_reserva
+    JOIN Usuario u ON r.dni_usuario = u.dni
+    JOIN Funcion f ON rf.id_funcion = f.id_funcion
+    JOIN Pelicula p ON f.id_pelicula = p.id_pelicula
+    JOIN Sala sa ON f.id_sala = sa.id_sala
+    JOIN Sede s ON sa.id_sede = s.id_sede
+    JOIN Reserva_butaca rb ON rf.id_reserva_funcion = rb.id_reserva_funcion
+    JOIN Butaca b ON rb.id_butaca = b.id_butaca
+    WHERE pg.id_pago = ?";
+    
+    $params = [$id_pago];
+    $stmt = sqlsrv_query($conn, $sql, $params);
+
+    if ($stmt === false) {
+        error_log("Error al obtener datos del comprobante: " . print_r(sqlsrv_errors(), true));
+        echo "<p style='color:red;'>Error al obtener datos del comprobante: " . print_r(sqlsrv_errors(), true) . "</p>";
+        echo "<a href='pelicula.php'>Volver</a>";
+        sqlsrv_close($conn);
+        ob_end_flush();
+        exit();
+    }
+
+    // Mostrar el comprobante
+    echo "<div class='form-container'>";
+    echo "<h2>Comprobante de Pago</h2>";
+    echo "<h3>Zynemax+ | Tu Cine Favorito</h3>";
+    echo "<hr>";
+
+    if ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+        echo "<p><strong>Usuario:</strong> " . htmlspecialchars($row['usuario']) . "</p>";
+        echo "<p><strong>Película:</strong> " . htmlspecialchars($row['pelicula']) . "</p>";
+        echo "<p><strong>Sede:</strong> " . htmlspecialchars($row['sede']) . "</p>";
+        echo "<p><strong>Sala:</strong> " . htmlspecialchars($row['sala']) . "</p>";
+        echo "<p><strong>Butaca:</strong> Fila " . htmlspecialchars($row['fila']) . ", Número " . htmlspecialchars($row['numero_butaca']) . "</p>";
+        echo "<p><strong>Fecha y Hora de la Función:</strong> " . $row['fecha_funcion']->format('Y-m-d H:i:s') . "</p>";
+        echo "<p><strong>Monto Pagado:</strong> $" . number_format($row['monto'], 2) . "</p>";
+        echo "<p><strong>Método de Pago:</strong> " . htmlspecialchars($row['metodo_pago']) . "</p>";
+        echo "<p><strong>Fecha de Pago:</strong> " . $row['fecha_pago']->format('Y-m-d H:i:s') . "</p>";
+        echo "<p><strong>ID de Pago:</strong> " . htmlspecialchars($id_pago) . "</p>";
+    } else {
+        echo "<p style='color:red;'>Error: No se encontraron datos para el comprobante.</p>";
+    }
+
+    echo "<hr>";
+    echo "<p>Gracias por tu compra en Zynemax+. ¡Disfruta de tu película!</p>";
+    echo "<a href='pelicula.php'>Volver</a>";
+    echo "</div>";
+
+    sqlsrv_free_stmt($stmt);
+
+    // Limpiar las variables de sesión
     unset($_SESSION['selected_movie']);
     unset($_SESSION['selected_sede']);
     unset($_SESSION['selected_sala']);
@@ -272,12 +346,6 @@ if (isset($_POST['simulate_payment'])) {
     unset($_SESSION['id_pago']);
     unset($_SESSION['monto_pago']);
 
-    echo "<div class='form-container'>";
-    echo "<h2>¡Compra realizada con éxito!</h2>";
-    echo "<p><strong>ID Pago:</strong> " . htmlspecialchars($id_pago) . "</p>";
-    echo "<p><strong>Monto Pagado:</strong> $" . number_format($monto_pago, 2) . "</p>";
-    echo "<a href='pelicula.php'>Volver</a>";
-    echo "</div>";
     sqlsrv_close($conn);
     ob_end_flush();
     exit();
