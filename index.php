@@ -48,7 +48,7 @@ if (isset($_POST['register'])) {
     }
 }
 
-// Procesar login (para cualquier tipo_usuario)
+// Procesar login
 if (isset($_POST['login'])) {
     $dni = isset($_POST['dni']) ? (int)$_POST['dni'] : null;
     $contrasena = isset($_POST['contrasena']) ? $_POST['contrasena'] : null;
@@ -71,7 +71,7 @@ if (isset($_POST['login'])) {
                 $_SESSION['nombre'] = $row['nombre'];
                 $_SESSION['email'] = $row['email'];
                 $_SESSION['tipo_usuario'] = $row['tipo_usuario'];
-                header("Location: pelicula.php"); // Redirección directa a pelicula.php
+                header("Location: pelicula.php");
                 exit();
             } else {
                 error_log("Contraseña incorrecta para DNI: $dni");
@@ -111,12 +111,11 @@ sqlsrv_close($conn);
             <a href="#" onclick="showForm('register')">Register</a>
         <?php else: ?>
             <a href="#" onclick="showForm('profile')">Perfil (<?php echo htmlspecialchars($_SESSION['nombre']); ?>)</a>
-            <a href="/pelicula.php">Películas</a> <!-- Enlace a pelicula.php -->
+            <a href="/pelicula.php">Películas</a>
             <a href="/logout.php">Logout</a>
         <?php endif; ?>
     </nav>
     <div class="container">
-        <!-- Formularios de Login y Registro -->
         <?php if (!isset($_SESSION['dni'])): ?>
             <div class="auth-section">
                 <?php
@@ -149,14 +148,9 @@ sqlsrv_close($conn);
                 </div>
             </div>
         <?php else: ?>
-            <!-- Mensaje de bienvenida -->
             <div class="welcome-message">
                 <h2>Bienvenido, <?php echo htmlspecialchars($_SESSION['nombre']); ?> (<?php echo htmlspecialchars($_SESSION['tipo_usuario']); ?>)</h2>
-                <p>¡Ya puedes acceder a las películas!</p>
-                <a href="/pelicula.php" class="btn">Ir a Películas</a> <!-- Botón para redirigir manualmente -->
             </div>
-
-            <!-- Sección de Perfil -->
             <div id="profile-form" class="form-container" style="display: none;">
                 <h2>Perfil de Usuario</h2>
                 <p><strong>DNI:</strong> <?php echo htmlspecialchars($_SESSION['dni']); ?></p>
@@ -170,20 +164,6 @@ sqlsrv_close($conn);
         <p>© 2025 Zynemax+ | Todos los derechos reservados</p>
     </footer>
     <script src="/scrip.js" defer></script>
-    <style>
-        .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #007BFF;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            margin-top: 10px;
-        }
-        .btn:hover {
-            background-color: #0056b3;
-        }
-    </style>
 </body>
 </html>
 <?php
