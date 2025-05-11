@@ -215,7 +215,7 @@ if (isset($_POST['confirm_purchase'])) {
 
     // Insertar en la tabla Pago
     $sql = "INSERT INTO Pago (id_reserva_funcion, metodo_pago, fecha_pago, estado_pago) VALUES (?, ?, ?, ?)";
-    $params = [$id_reserva_funcion, 'tarjeta', date('Y-m-d H:i:s'), 'pendiente'];
+    $params = [$id_reserva_funcion, 'pendiente', date('Y-m-d H:i:s'), 'pendiente'];
     $stmt = sqlsrv_query($conn, $sql, $params);
 
     if ($stmt === false) {
@@ -252,7 +252,7 @@ if (isset($_POST['simulate_payment'])) {
 
     $id_pago = $_SESSION['id_pago'];
     $monto_pago = $_SESSION['monto_pago'];
-    $metodo_pago = isset($_POST['payment_method']) ? $_POST['payment_method'] : 'tarjeta';
+    $metodo_pago = isset($_POST['payment_method']) ? $_POST['payment_method'] : 'pendiente';
 
     // Actualizar el estado del pago
     $sql = "UPDATE Pago SET metodo_pago = ?, estado_pago = ?, fecha_pago = ? WHERE id_pago = ?";
@@ -269,7 +269,7 @@ if (isset($_POST['simulate_payment'])) {
     }
     sqlsrv_free_stmt($stmt);
 
-    // Consultar los datos para el comprobante
+    // Consultar los datos para el comprobante (simplificado)
     $sql = "SELECT 
         u.nombre AS usuario,
         p.titulo AS pelicula,
@@ -278,9 +278,7 @@ if (isset($_POST['simulate_payment'])) {
         b.fila AS fila,
         b.numero_butaca AS numero_butaca,
         f.fecha_hora AS fecha_funcion,
-        p.precio AS monto,
-        pg.metodo_pago AS metodo_pago,
-        pg.fecha_pago AS fecha_pago
+        p.precio AS monto
     FROM Pago pg
     JOIN Reserva_funcion rf ON pg.id_reserva_funcion = rf.id_reserva_funcion
     JOIN Reserva r ON rf.id_reserva = r.id_reserva
@@ -305,7 +303,7 @@ if (isset($_POST['simulate_payment'])) {
         exit();
     }
 
-    // Mostrar el comprobante
+    // Mostrar el comprobante (simplificado)
     echo "<div class='form-container'>";
     echo "<h2>Comprobante de Pago</h2>";
     echo "<h3>Zynemax+ | Tu Cine Favorito</h3>";
@@ -319,15 +317,14 @@ if (isset($_POST['simulate_payment'])) {
         echo "<p><strong>Butaca:</strong> Fila " . htmlspecialchars($row['fila']) . ", Número " . htmlspecialchars($row['numero_butaca']) . "</p>";
         echo "<p><strong>Fecha y Hora de la Función:</strong> " . $row['fecha_funcion']->format('Y-m-d H:i:s') . "</p>";
         echo "<p><strong>Monto Pagado:</strong> $" . number_format($row['monto'], 2) . "</p>";
-        echo "<p><strong>Método de Pago:</strong> " . htmlspecialchars($row['metodo_pago']) . "</p>";
-        echo "<p><strong>Fecha de Pago:</strong> " . $row['fecha_pago']->format('Y-m-d H:i:s') . "</p>";
-        echo "<p><strong>ID de Pago:</strong> " . htmlspecialchars($id_pago) . "</p>";
+        echo "<p><strong>Método de Pago:</strong> " . htmlspecialchars($metodo_pago) . "</p>";
+        echo "<p><strong>Fecha de Pago:</strong> " . date('Y-m-d H:i:s') . "</p>";
     } else {
         echo "<p style='color:red;'>Error: No se encontraron datos para el comprobante.</p>";
     }
 
     echo "<hr>";
-    echo "<p>Gracias por tu compra en Zynemax+. ¡Disfruta de tu película!</p>";
+    echo "<p>¡Gracias por tu compra en Zynemax+! Disfruta tu película.</p>";
     echo "<a href='pelicula.php'>Volver</a>";
     echo "</div>";
 
@@ -622,14 +619,14 @@ if (isset($_POST['simulate_payment'])) {
         <?php if (isset($_GET['step']) && $_GET['step'] === 'payment' && isset($_SESSION['id_pago'])): ?>
             <div class="form-container">
                 <h2>Simular Pago</h2>
-                <p>Por favor, selecciona un método de pago para simular la transacción.</p>
+                <p>Selecciona cómo deseas pagar tu entrada:</p>
                 <form method="POST">
-                    <select name="payment_method" required>
-                        <option value="tarjeta">Tarjeta</option>
-                        <option value="efectivo">Efectivo</option>
-                        <option value="transferencia">Transferencia</option>
-                    </select>
-                    <button type="submit" name="simulate_payment">Pagar</button>
+                    <div style="margin-bottom: 15px;">
+                        <label><input type="radio" name="payment_method" value="Efectivo" required> Efectivo</label><br>
+                        <label><input type="radio" name="payment_method" value="Tarjeta"> Tarjeta</label><br>
+                        <label><input type="radio" name="payment_method" value="QR"> QR</label>
+                    </div>
+                    <button type="submit" name="simulate_payment" style="background-color: #b22222; color: white; padding: 10px 20px; border: none; cursor: pointer;">Pagar</button>
                 </form>
             </div>
         <?php endif; ?>
