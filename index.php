@@ -158,7 +158,7 @@ sqlsrv_close($conn);
             </div>
         <?php else: ?>
             <div class="welcome-message">
-                <h2>Bienvenido, <?php echo htmlspecialchars($_SESSION['nombre']); ?> (<?php echo htmlspecialchars($_SESSION['tipo_usuario']); ?>)</h2>
+                <h2>Bienvenido, <?php echo htmlspecialchars($_SESSION['nombre']); ?> </h2>
             </div>
             <div id="profile-form" class="form-container" style="display: none;">
                 <h2>Perfil de Usuario</h2>
